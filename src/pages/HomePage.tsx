@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { loadSchedule } from "../services/storage/scheduleRepository";
 import { loadSettings } from "../services/storage/settingsRepository";
-import { generateIcsContent } from "../services/ics/exportIcs";
 import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
 import {
@@ -31,7 +30,6 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
   const [schedule] = useState(() => loadSchedule());
   const [settings] = useState(() => loadSettings());
   const now = useNow();
-  const [exportError, setExportError] = useState<string | null>(null);
   const [notificationState, setNotificationState] = useState<NotificationState>(() =>
     typeof Notification === "undefined" ? "unsupported" : Notification.permission,
   );
@@ -56,22 +54,6 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
       }
     } catch (error) {
       setNotificationError(error instanceof Error ? error.message : "請求通知權限時發生錯誤");
-    }
-  };
-
-  const handleExportIcs = () => {
-    try {
-      setExportError(null);
-      const content = generateIcsContent(schedule, settings);
-      const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "課表.ics";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      setExportError(error instanceof Error ? error.message : "匯出失敗");
     }
   };
 
@@ -169,22 +151,6 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
             })}
           </ul>
         )}
-      </section>
-
-      <section className="flex flex-col gap-2 rounded-3xl bg-sky p-5 text-ink">
-        <h2 className="text-sm font-black">匯出到手機行事曆</h2>
-        <p className="text-xs font-bold opacity-70">
-          瀏覽器通知只在這個網頁開著的時候會跳出來,不夠可靠。匯出 .ics 檔匯入 Apple/Google
-          行事曆後,由行事曆 App 自己排鬧鐘,就算沒開這個網頁也會準時提醒你。
-        </p>
-        <button
-          type="button"
-          onClick={handleExportIcs}
-          className="self-start rounded-full bg-ink px-5 py-2.5 text-sm font-black text-sky transition-transform active:scale-95"
-        >
-          匯出 .ics 行事曆檔
-        </button>
-        {exportError && <p className="text-sm font-bold text-red-700">{exportError}</p>}
       </section>
 
       <section className="flex flex-col gap-2 rounded-3xl bg-mint p-5 text-ink">
