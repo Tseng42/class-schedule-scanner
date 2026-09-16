@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0b0b0f;
+  --color-cream: #f7f5ee;
+  --color-lime: #d7f24c;
+  --color-lime-dark: #a9c122;
+  --color-pink: #ff8fc0;
+  --color-pink-dark: #e0679c;
+  --color-sky: #7fd6f5;
+  --color-sky-dark: #4bb3da;
+  --color-mint: #b0f5c8;
+  --color-mint-dark: #6fd695;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
