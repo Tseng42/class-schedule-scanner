@@ -117,6 +117,7 @@ export function SettingsPage() {
             onChange={(event) =>
               setSettings((prev) => ({ ...prev, semesterStartDate: event.target.value || undefined }))
             }
+            onClick={(event) => event.currentTarget.showPicker?.()}
             className="rounded-xl border-2 border-ink/20 bg-white px-3 py-1.5 font-bold text-ink focus:border-ink focus:outline-none"
           />
         </label>
@@ -129,6 +130,7 @@ export function SettingsPage() {
             onChange={(event) =>
               setSettings((prev) => ({ ...prev, semesterEndDate: event.target.value || undefined }))
             }
+            onClick={(event) => event.currentTarget.showPicker?.()}
             className="rounded-xl border-2 border-ink/20 bg-white px-3 py-1.5 font-bold text-ink focus:border-ink focus:outline-none"
           />
         </label>

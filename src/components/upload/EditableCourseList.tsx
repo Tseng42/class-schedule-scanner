@@ -210,6 +210,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
                       type="date"
                       value={course.onceDate}
                       onChange={(event) => updateOnceDate(course.localId, event.target.value)}
+                      onClick={(event) => event.currentTarget.showPicker?.()}
                       className="rounded-full border-2 border-ink/15 px-3 py-1 text-xs font-bold text-ink dark:border-white/20 dark:bg-transparent dark:text-white"
                     />
                     {course.timeSlots[0] && (
