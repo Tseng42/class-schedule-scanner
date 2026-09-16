@@ -2,11 +2,13 @@ import { useState } from "react";
 import { HomePage } from "./pages/HomePage";
 import { UploadPage } from "./pages/UploadPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ManageCoursesPage } from "./pages/ManageCoursesPage";
 
-type View = "home" | "upload" | "settings";
+type View = "home" | "upload" | "manage" | "settings";
 
 const TABS: { view: View; label: string }[] = [
   { view: "home", label: "今天課表" },
+  { view: "manage", label: "所有課程" },
   { view: "upload", label: "掃描課表" },
   { view: "settings", label: "設定" },
 ];
@@ -16,8 +18,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-cream dark:bg-ink">
-      <nav className="mx-auto flex max-w-2xl gap-1 px-4 pt-5">
-        <div className="flex gap-1 rounded-full border-2 border-ink bg-white p-1 dark:border-white/20 dark:bg-white/5">
+      <nav className="mx-auto flex max-w-2xl flex-wrap gap-1 px-4 pt-5">
+        <div className="flex flex-wrap gap-1 rounded-full border-2 border-ink bg-white p-1 dark:border-white/20 dark:bg-white/5">
           {TABS.map((tab) => (
             <button
               key={tab.view}
@@ -35,6 +37,7 @@ function App() {
         </div>
       </nav>
       {view === "home" && <HomePage onNavigateUpload={() => setView("upload")} />}
+      {view === "manage" && <ManageCoursesPage onNavigateUpload={() => setView("upload")} />}
       {view === "upload" && <UploadPage onNavigateHome={() => setView("home")} />}
       {view === "settings" && <SettingsPage />}
     </div>

@@ -11,21 +11,21 @@ interface UploadPageProps {
 export function UploadPage({ onNavigateHome }: UploadPageProps) {
   const { uploaded, error: uploadError, selectFile, reset: resetUpload } = useImageUpload();
   const { state, run, reset: resetExtraction } = useScheduleExtraction();
-  const [savedCount, setSavedCount] = useState<number | null>(null);
+  const [savedResult, setSavedResult] = useState<{ added: number; skipped: number } | null>(null);
 
   const isBusy = state.status === "reading" || state.status === "extracting";
 
   const handleSelect = (file: File) => {
     selectFile(file);
     resetExtraction();
-    setSavedCount(null);
+    setSavedResult(null);
     void run(file);
   };
 
   const handleReset = () => {
     resetUpload();
     resetExtraction();
-    setSavedCount(null);
+    setSavedResult(null);
   };
 
   return (
@@ -49,9 +49,12 @@ export function UploadPage({ onNavigateHome }: UploadPageProps) {
         <div className="rounded-3xl bg-pink p-4 text-sm font-bold text-ink">{uploadError}</div>
       )}
 
-      {savedCount !== null ? (
+      {savedResult !== null ? (
         <div className="rounded-3xl bg-lime p-5 text-ink">
-          <p className="font-black">已儲存 {savedCount} 堂課到這個瀏覽器,重新整理也不會不見。</p>
+          <p className="font-black">
+            已儲存 {savedResult.added} 堂課到這個瀏覽器,重新整理也不會不見。
+            {savedResult.skipped > 0 && `(另外 ${savedResult.skipped} 堂課跟已存的重複,自動跳過)`}
+          </p>
           <button
             type="button"
             onClick={onNavigateHome}
@@ -61,7 +64,7 @@ export function UploadPage({ onNavigateHome }: UploadPageProps) {
           </button>
         </div>
       ) : (
-        <ExtractionResultView state={state} onSaved={setSavedCount} />
+        <ExtractionResultView state={state} onSaved={setSavedResult} />
       )}
 
       {uploaded && !isBusy && (

@@ -31,7 +31,7 @@ function readFileAsBase64(file: File): Promise<string> {
 
 function describeError(error: unknown): string {
   if (error instanceof MissingApiKeyError) {
-    return "尚未設定 API key,請在專案根目錄的 .env 檔設定 VITE_ANTHROPIC_API_KEY 後重新啟動";
+    return "尚未設定 API key,請到下方「設定」分頁貼上你的 Anthropic API key";
   }
   if (error instanceof RefusalError) {
     return "模型拒絕處理這個請求,請換一張圖片再試";

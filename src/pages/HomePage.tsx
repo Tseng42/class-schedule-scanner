@@ -200,7 +200,7 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
         {notificationState === "unsupported" ? (
           <p className="text-sm font-bold opacity-70">這個瀏覽器不支援通知功能</p>
         ) : notificationState === "granted" ? (
-          <p className="text-sm font-black">已開啟,上課前 {settings.reminderMinutes} 分鐘會提醒你</p>
+          <p className="text-sm font-black">已開啟,上課前 {formatDuration(settings.reminderMinutes * 60000)}會提醒你</p>
         ) : notificationState === "denied" ? (
           <p className="text-sm font-bold opacity-70">已被封鎖,如果想開啟,請到瀏覽器的網站設定裡手動允許通知</p>
         ) : (

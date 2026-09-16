@@ -3,7 +3,7 @@ import { EditableCourseList } from "./EditableCourseList";
 
 interface ExtractionResultViewProps {
   state: ExtractionState;
-  onSaved: (savedCount: number) => void;
+  onSaved: (result: { added: number; skipped: number }) => void;
 }
 
 export function ExtractionResultView({ state, onSaved }: ExtractionResultViewProps) {
