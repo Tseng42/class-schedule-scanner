@@ -3,6 +3,7 @@ import { loadSchedule } from "../services/storage/scheduleRepository";
 import { loadSettings } from "../services/storage/settingsRepository";
 import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
+import { AccordionSection } from "../components/AccordionSection";
 import {
   findCurrentOccurrence,
   formatDuration,
@@ -76,6 +77,14 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
   const current = findCurrentOccurrence(todayOccurrences, now);
   const next = getNextOccurrence(schedule, now);
   const todayLabel = now.toLocaleDateString("zh-TW", { month: "long", day: "numeric", weekday: "long" });
+  const notificationSubtitle =
+    notificationState === "unsupported"
+      ? "不支援"
+      : notificationState === "granted"
+        ? "已開啟"
+        : notificationState === "denied"
+          ? "已封鎖"
+          : "尚未開啟";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
@@ -153,8 +162,7 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
         )}
       </section>
 
-      <section className="flex flex-col gap-2 rounded-3xl bg-mint p-5 text-ink">
-        <h2 className="text-sm font-black">瀏覽器通知(方便功能)</h2>
+      <AccordionSection title="瀏覽器通知(方便功能)" colorClass="bg-mint" subtitle={notificationSubtitle}>
         <p className="text-xs font-bold opacity-70">
           只在這個網頁開著的時候才會準時跳出來,分頁關掉或瀏覽器背景太久都可能失效,不是可靠的提醒方式。
         </p>
@@ -179,7 +187,7 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
           </button>
         )}
         {notificationError && <p className="text-sm font-bold text-red-700">{notificationError}</p>}
-      </section>
+      </AccordionSection>
 
       <button
         type="button"
