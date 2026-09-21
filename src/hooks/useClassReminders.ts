@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import type { Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
+import { EVENT_KIND_LABELS } from "../schema/course";
 import { getOccurrencesForDate, type CourseOccurrence } from "../services/scheduling/nextClass";
-import { scheduleReminders } from "../services/notifications/scheduleNotifications";
+import { listEvents } from "../services/scheduling/events";
+import { scheduleEventReminders, scheduleReminders } from "../services/notifications/scheduleNotifications";
 
 const MAX_LOOKAHEAD_DAYS = 20;
 
@@ -25,11 +27,23 @@ export function useClassReminders(schedule: Schedule, settings: AppSettings, ena
       occurrences.push(...getOccurrencesForDate(schedule, date));
     }
 
-    return scheduleReminders(occurrences, settings.reminderMinutes, now, (occurrence) => {
+    const cancelClassReminders = scheduleReminders(occurrences, settings.reminderMinutes, now, (occurrence) => {
       new Notification(`即將上課:${occurrence.course.name}`, {
         body: `${occurrence.timeSlot.startTime} 開始${occurrence.course.location ? ` · ${occurrence.course.location}` : ""}`,
         tag: occurrence.timeSlot.id,
       });
     });
+
+    const cancelEventReminders = scheduleEventReminders(listEvents(schedule), now, (item) => {
+      new Notification(`${EVENT_KIND_LABELS[item.event.kind]}提醒:${item.event.title || item.course.name}`, {
+        body: `${item.course.name} · ${item.event.date}${item.allDay ? "" : ` ${item.event.time}`}`,
+        tag: item.event.id,
+      });
+    });
+
+    return () => {
+      cancelClassReminders();
+      cancelEventReminders();
+    };
   }, [schedule, settings, enabled]);
 }

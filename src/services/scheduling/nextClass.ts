@@ -8,6 +8,21 @@ export interface CourseOccurrence {
   dateKey: string;
   startAt: Date;
   endAt: Date;
+  /** Set only when the class is cancelled that day (and cancelled ones were asked for). */
+  cancelledReason?: string;
+}
+
+function isWithin(dateKey: string, startDate: string, endDate: string): boolean {
+  return dateKey >= startDate && dateKey <= endDate;
+}
+
+/** Why this course doesn't meet on the given date, or null if it does. Course-specific reasons win over holidays. */
+export function getCancellationReason(schedule: Schedule, course: Course, dateKey: string): string | null {
+  const cancellation = course.cancellations?.find((item) => isWithin(dateKey, item.startDate, item.endDate));
+  if (cancellation) return cancellation.reason?.trim() || "停課";
+  const holiday = schedule.holidays?.find((item) => isWithin(dateKey, item.startDate, item.endDate));
+  if (holiday) return holiday.name.trim() || "放假";
+  return null;
 }
 
 function isRecurrenceActiveOn(recurrence: Recurrence, dateKey: string): boolean {
@@ -17,13 +32,23 @@ function isRecurrenceActiveOn(recurrence: Recurrence, dateKey: string): boolean 
   return true;
 }
 
-/** All course occurrences that fall on the given calendar date, sorted by start time. */
-export function getOccurrencesForDate(schedule: Schedule, date: Date): CourseOccurrence[] {
+/**
+ * All course occurrences that fall on the given calendar date, sorted by start time.
+ * Cancelled classes are left out unless `includeCancelled` is set (the timetable grid
+ * shows them greyed out; reminders and the next-class card must not).
+ */
+export function getOccurrencesForDate(
+  schedule: Schedule,
+  date: Date,
+  includeCancelled = false,
+): CourseOccurrence[] {
   const dateKey = toDateKey(date);
   const dayCode = dayOfWeekOf(dateKey);
   const occurrences: CourseOccurrence[] = [];
   for (const course of schedule.courses) {
     if (!isRecurrenceActiveOn(course.recurrence, dateKey)) continue;
+    const cancelledReason = getCancellationReason(schedule, course, dateKey);
+    if (cancelledReason && !includeCancelled) continue;
     for (const slot of course.timeSlots) {
       if (slot.dayOfWeek !== dayCode) continue;
       occurrences.push({
@@ -32,6 +57,7 @@ export function getOccurrencesForDate(schedule: Schedule, date: Date): CourseOcc
         dateKey,
         startAt: combineDateAndTime(dateKey, slot.startTime),
         endAt: combineDateAndTime(dateKey, slot.endTime),
+        ...(cancelledReason ? { cancelledReason } : {}),
       });
     }
   }

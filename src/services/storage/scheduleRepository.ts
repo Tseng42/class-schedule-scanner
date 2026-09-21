@@ -1,4 +1,4 @@
-import { createEmptySchedule, scheduleSchema, type Schedule } from "../../schema/schedule";
+import { createEmptySchedule, scheduleSchema, type Holiday, type Schedule } from "../../schema/schedule";
 import type { Course } from "../../schema/course";
 
 const STORAGE_KEY = "class-schedule-scanner:schedule";
@@ -51,6 +51,23 @@ export function addCourses(newCourses: Course[]): AddCoursesResult {
 export function removeCourse(courseId: string): Schedule {
   const current = loadSchedule();
   const updated: Schedule = { ...current, courses: current.courses.filter((course) => course.id !== courseId) };
+  persist(updated);
+  return updated;
+}
+
+export function addHoliday(holiday: Holiday): Schedule {
+  const current = loadSchedule();
+  const updated: Schedule = { ...current, holidays: [...(current.holidays ?? []), holiday] };
+  persist(updated);
+  return updated;
+}
+
+export function removeHoliday(holidayId: string): Schedule {
+  const current = loadSchedule();
+  const updated: Schedule = {
+    ...current,
+    holidays: (current.holidays ?? []).filter((holiday) => holiday.id !== holidayId),
+  };
   persist(updated);
   return updated;
 }

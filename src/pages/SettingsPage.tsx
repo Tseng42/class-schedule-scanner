@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { loadSchedule } from "../services/storage/scheduleRepository";
+import { addHoliday, loadSchedule, removeHoliday } from "../services/storage/scheduleRepository";
 import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
 import { generateIcsContent } from "../services/ics/exportIcs";
 import { formatDuration } from "../services/scheduling/nextClass";
 import { clearActiveApiKey, hasActiveStoredApiKey, setActiveApiKey } from "../services/ai";
 import { AccordionSection } from "../components/AccordionSection";
+import { HolidayEditor } from "../components/HolidayEditor";
 
 type ReminderUnit = "minutes" | "hours" | "days";
 
@@ -42,7 +43,7 @@ function isIos(): boolean {
 }
 
 export function SettingsPage() {
-  const [schedule] = useState(() => loadSchedule());
+  const [schedule, setSchedule] = useState(() => loadSchedule());
   const [settings, setSettings] = useState(() => loadSettings());
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -213,6 +214,18 @@ export function SettingsPage() {
           </button>
           {savedFlash && <span className="text-sm font-black">已儲存</span>}
         </div>
+      </AccordionSection>
+
+      <AccordionSection
+        title="全校放假日"
+        colorClass="bg-pink"
+        subtitle={schedule.holidays?.length ? `${schedule.holidays.length} 筆` : undefined}
+      >
+        <HolidayEditor
+          holidays={schedule.holidays ?? []}
+          onAdd={(holiday) => setSchedule(addHoliday(holiday))}
+          onRemove={(holidayId) => setSchedule(removeHoliday(holidayId))}
+        />
       </AccordionSection>
 
       <AccordionSection title="匯出到手機行事曆" colorClass="bg-sky">

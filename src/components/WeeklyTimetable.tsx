@@ -3,6 +3,7 @@ import { DAY_OF_WEEK_LABELS, type DayOfWeek } from "../schema/course";
 import type { Schedule } from "../schema/schedule";
 import { getOccurrencesForDate, type CourseOccurrence } from "../services/scheduling/nextClass";
 import { toDateKey } from "../services/scheduling/dateKey";
+import { listEvents } from "../services/scheduling/events";
 
 const DAY_ORDER: DayOfWeek[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const HOUR_HEIGHT = 56;
@@ -96,13 +97,19 @@ export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
   const todayKey = toDateKey(today);
   const colorIndexByCourseId = new Map(schedule.courses.map((course, index) => [course.id, index % BLOCK_COLORS.length]));
 
+  const eventCountByDate = new Map<string, number>();
+  for (const item of listEvents(schedule)) {
+    eventCountByDate.set(item.event.date, (eventCountByDate.get(item.event.date) ?? 0) + 1);
+  }
+
   const columns = visibleDays.map((day, index) => {
     const date = shiftDays(weekStart, index);
     return {
       day,
       date,
       isToday: toDateKey(date) === todayKey,
-      items: layoutDay(getOccurrencesForDate(schedule, date)),
+      eventCount: eventCountByDate.get(toDateKey(date)) ?? 0,
+      items: layoutDay(getOccurrencesForDate(schedule, date, true)),
     };
   });
 
@@ -151,6 +158,11 @@ export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
                 <p className="mt-0.5 text-[10px] font-bold text-ink/40 dark:text-white/40">
                   {formatMonthDay(column.date)}
                 </p>
+                {column.eventCount > 0 && (
+                  <p className="mx-auto mt-0.5 w-fit rounded-full bg-pink px-1.5 text-[9px] font-black text-ink">
+                    {column.eventCount} 事項
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -189,10 +201,15 @@ export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
                   const top = ((item.start - startHour * 60) / 60) * HOUR_HEIGHT + 1;
                   const height = Math.max(20, ((item.end - item.start) / 60) * HOUR_HEIGHT - 2);
                   const color = BLOCK_COLORS[colorIndexByCourseId.get(occurrence.course.id) ?? 0];
+                  const reason = occurrence.cancelledReason;
                   return (
                     <div
                       key={occurrence.timeSlot.id}
-                      className={`absolute overflow-hidden rounded-lg border-2 border-ink p-1 text-ink dark:border-white/30 ${color}`}
+                      className={`absolute overflow-hidden rounded-lg border-2 p-1 text-ink ${
+                        reason !== undefined
+                          ? "border-dashed border-ink/30 bg-ink/5 dark:border-white/30 dark:bg-white/10 dark:text-white"
+                          : `border-ink dark:border-white/30 ${color}`
+                      }`}
                       style={{
                         top,
                         height,
@@ -200,11 +217,16 @@ export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
                         width: `${100 / item.lanes}%`,
                       }}
                     >
-                      <p className="text-[11px] leading-tight font-black">
+                      <p className={`text-[11px] leading-tight font-black ${reason !== undefined ? "line-through opacity-60" : ""}`}>
                         {occurrence.course.name}
                         {occurrence.course.recurrence.type === "once" ? " · 補課" : ""}
                       </p>
-                      {height >= 44 && occurrence.course.location && (
+                      {reason !== undefined && (
+                        <p className="mt-0.5 text-[10px] leading-tight font-black text-pink-dark">
+                          {reason === "停課" ? "停課" : `停課 · ${reason}`}
+                        </p>
+                      )}
+                      {reason === undefined && height >= 44 && occurrence.course.location && (
                         <p className="mt-0.5 text-[10px] leading-tight font-bold opacity-70">
                           {occurrence.course.location}
                         </p>

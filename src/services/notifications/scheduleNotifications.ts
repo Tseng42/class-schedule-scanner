@@ -1,4 +1,5 @@
 import type { CourseOccurrence } from "../scheduling/nextClass";
+import type { ScheduledEvent } from "../scheduling/events";
 
 // setTimeout delays are a 32-bit signed int internally; anything beyond this
 // overflows and fires almost immediately instead of at the intended time.
@@ -17,6 +18,25 @@ export function scheduleReminders(
       return delay > 0 && delay <= MAX_TIMEOUT_DELAY
         ? window.setTimeout(() => onFire(occurrence), delay)
         : null;
+    })
+    .filter((timer): timer is number => timer !== null);
+
+  return () => {
+    for (const timer of timers) window.clearTimeout(timer);
+  };
+}
+
+/** Schedules a timer per event at its own reminder time, skipping ones already past or out of timer range. */
+export function scheduleEventReminders(
+  events: ScheduledEvent[],
+  now: Date,
+  onFire: (item: ScheduledEvent) => void,
+): () => void {
+  const timers = events
+    .map((item) => {
+      if (!item.fireAt) return null;
+      const delay = item.fireAt.getTime() - now.getTime();
+      return delay > 0 && delay <= MAX_TIMEOUT_DELAY ? window.setTimeout(() => onFire(item), delay) : null;
     })
     .filter((timer): timer is number => timer !== null);
 

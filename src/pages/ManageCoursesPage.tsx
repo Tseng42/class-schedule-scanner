@@ -10,6 +10,7 @@ import {
 import { loadSchedule, removeCourse, updateCourse } from "../services/storage/scheduleRepository";
 import { dayOfWeekOf } from "../services/scheduling/dateKey";
 import { generateId } from "../lib/id";
+import { CourseExtras } from "../components/CourseExtras";
 
 const DAY_OPTIONS: DayOfWeek[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 
@@ -52,6 +53,10 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
     const updated = updateCourse(editingId, draftToCourse(draft, original));
     setCourses(updated.courses);
     cancelEdit();
+  };
+
+  const handleExtrasChange = (next: Course) => {
+    setCourses(updateCourse(next.id, next).courses);
   };
 
   const handleDelete = (courseId: string) => {
@@ -319,35 +324,38 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
           return (
             <div
               key={course.id}
-              className="flex items-start justify-between gap-3 rounded-3xl border-2 border-ink/10 bg-white p-4 dark:border-white/10 dark:bg-white/5"
+              className="rounded-3xl border-2 border-ink/10 bg-white p-4 dark:border-white/10 dark:bg-white/5"
             >
-              <div>
-                <p className="font-black text-ink dark:text-white">{course.name}</p>
-                <p className="mt-1 text-xs font-bold text-ink/60 dark:text-white/60">
-                  {describeSchedule(course)}
-                </p>
-                {(course.teacher || course.location) && (
-                  <p className="mt-1 text-xs font-bold text-ink/40 dark:text-white/40">
-                    {[course.teacher, course.location].filter(Boolean).join(" · ")}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-black text-ink dark:text-white">{course.name}</p>
+                  <p className="mt-1 text-xs font-bold text-ink/60 dark:text-white/60">
+                    {describeSchedule(course)}
                   </p>
-                )}
+                  {(course.teacher || course.location) && (
+                    <p className="mt-1 text-xs font-bold text-ink/40 dark:text-white/40">
+                      {[course.teacher, course.location].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(course)}
+                    className="rounded-full px-3 py-1.5 text-xs font-black text-ink/60 hover:bg-ink/5 hover:text-ink dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+                  >
+                    編輯
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(course.id)}
+                    className="rounded-full px-3 py-1.5 text-xs font-black text-ink/60 hover:bg-pink hover:text-ink dark:text-white/60"
+                  >
+                    刪除
+                  </button>
+                </div>
               </div>
-              <div className="flex shrink-0 gap-1">
-                <button
-                  type="button"
-                  onClick={() => startEdit(course)}
-                  className="rounded-full px-3 py-1.5 text-xs font-black text-ink/60 hover:bg-ink/5 hover:text-ink dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
-                >
-                  編輯
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(course.id)}
-                  className="rounded-full px-3 py-1.5 text-xs font-black text-ink/60 hover:bg-pink hover:text-ink dark:text-white/60"
-                >
-                  刪除
-                </button>
-              </div>
+              <CourseExtras course={course} onChange={handleExtrasChange} />
             </div>
           );
         })}
