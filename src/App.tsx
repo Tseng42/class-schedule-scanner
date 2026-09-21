@@ -4,6 +4,7 @@ import { UploadPage } from "./pages/UploadPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ManageCoursesPage } from "./pages/ManageCoursesPage";
 import { useSwipeNavigation } from "./hooks/useSwipeNavigation";
+import { useAppUpdate } from "./hooks/useAppUpdate";
 
 type View = "home" | "upload" | "manage" | "settings";
 type Direction = "next" | "prev";
@@ -18,6 +19,7 @@ const TABS: { view: View; label: string }[] = [
 function App() {
   const [view, setView] = useState<View>("home");
   const [direction, setDirection] = useState<Direction | null>(null);
+  const updateReady = useAppUpdate();
 
   const navigateTo = (target: View) => {
     const from = TABS.findIndex((tab) => tab.view === view);
@@ -59,6 +61,18 @@ function App() {
         {view === "upload" && <UploadPage onNavigateHome={() => navigateTo("home")} />}
         {view === "settings" && <SettingsPage />}
       </div>
+      {updateReady && (
+        <div className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-full bg-ink py-2 pr-2 pl-5 text-sm font-black text-lime shadow-lg dark:bg-lime dark:text-ink">
+          <span>有新版本可以使用</span>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-full bg-lime px-4 py-2 text-ink transition-transform active:scale-95 dark:bg-ink dark:text-lime"
+          >
+            更新
+          </button>
+        </div>
+      )}
     </div>
   );
 }
