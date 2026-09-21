@@ -3,13 +3,13 @@ import { HomePage } from "./pages/HomePage";
 import { UploadPage } from "./pages/UploadPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ManageCoursesPage } from "./pages/ManageCoursesPage";
-import { WeeklyTimetablePage } from "./pages/WeeklyTimetablePage";
+import { useSwipeNavigation } from "./hooks/useSwipeNavigation";
 
-type View = "home" | "week" | "upload" | "manage" | "settings";
+type View = "home" | "upload" | "manage" | "settings";
+type Direction = "next" | "prev";
 
 const TABS: { view: View; label: string }[] = [
-  { view: "home", label: "今天課表" },
-  { view: "week", label: "週課表" },
+  { view: "home", label: "課表" },
   { view: "manage", label: "所有課程" },
   { view: "upload", label: "掃描課表" },
   { view: "settings", label: "設定" },
@@ -17,6 +17,21 @@ const TABS: { view: View; label: string }[] = [
 
 function App() {
   const [view, setView] = useState<View>("home");
+  const [direction, setDirection] = useState<Direction | null>(null);
+
+  const navigateTo = (target: View) => {
+    const from = TABS.findIndex((tab) => tab.view === view);
+    const to = TABS.findIndex((tab) => tab.view === target);
+    if (from === to) return;
+    setDirection(to > from ? "next" : "prev");
+    setView(target);
+  };
+
+  useSwipeNavigation((swipeDirection) => {
+    const current = TABS.findIndex((tab) => tab.view === view);
+    const target = TABS[current + (swipeDirection === "next" ? 1 : -1)];
+    if (target) navigateTo(target.view);
+  });
 
   return (
     <div className="min-h-screen bg-cream dark:bg-ink">
@@ -26,8 +41,8 @@ function App() {
             <button
               key={tab.view}
               type="button"
-              onClick={() => setView(tab.view)}
-              className={`rounded-full px-2 py-2 text-[13px] font-black transition-colors sm:px-4 sm:text-sm ${
+              onClick={() => navigateTo(tab.view)}
+              className={`rounded-full px-4 py-2 text-sm font-black transition-colors ${
                 view === tab.view
                   ? "bg-ink text-lime dark:bg-lime dark:text-ink"
                   : "text-ink/50 hover:text-ink dark:text-white/50 dark:hover:text-white"
@@ -38,11 +53,12 @@ function App() {
           ))}
         </div>
       </nav>
-      {view === "home" && <HomePage onNavigateUpload={() => setView("upload")} />}
-      {view === "week" && <WeeklyTimetablePage onNavigateUpload={() => setView("upload")} />}
-      {view === "manage" && <ManageCoursesPage onNavigateUpload={() => setView("upload")} />}
-      {view === "upload" && <UploadPage onNavigateHome={() => setView("home")} />}
-      {view === "settings" && <SettingsPage />}
+      <div key={view} className={direction ? `page-enter-${direction}` : undefined}>
+        {view === "home" && <HomePage onNavigateUpload={() => navigateTo("upload")} />}
+        {view === "manage" && <ManageCoursesPage onNavigateUpload={() => navigateTo("upload")} />}
+        {view === "upload" && <UploadPage onNavigateHome={() => navigateTo("home")} />}
+        {view === "settings" && <SettingsPage />}
+      </div>
     </div>
   );
 }

@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { DAY_OF_WEEK_LABELS, type DayOfWeek } from "../schema/course";
-import { loadSchedule } from "../services/storage/scheduleRepository";
+import type { Schedule } from "../schema/schedule";
 import { getOccurrencesForDate, type CourseOccurrence } from "../services/scheduling/nextClass";
 import { toDateKey } from "../services/scheduling/dateKey";
 
 const DAY_ORDER: DayOfWeek[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const HOUR_HEIGHT = 56;
 const GUTTER_WIDTH = 40;
-const MIN_COLUMN_WIDTH = 64;
+const MIN_COLUMN_WIDTH = 52;
 const BLOCK_COLORS = ["bg-lime", "bg-pink", "bg-sky", "bg-mint"];
 
-interface WeeklyTimetablePageProps {
-  onNavigateUpload: () => void;
+interface WeeklyTimetableProps {
+  schedule: Schedule;
+  today: Date;
 }
 
 interface LaidOutOccurrence {
@@ -76,25 +77,8 @@ function layoutDay(occurrences: CourseOccurrence[]): LaidOutOccurrence[] {
   return items;
 }
 
-export function WeeklyTimetablePage({ onNavigateUpload }: WeeklyTimetablePageProps) {
-  const [schedule] = useState(() => loadSchedule());
-  const [today] = useState(() => new Date());
+export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
   const [weekOffset, setWeekOffset] = useState(0);
-
-  if (schedule.courses.length === 0) {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 px-4 py-10 text-center">
-        <p className="text-2xl font-black text-ink dark:text-white">還沒有課表資料</p>
-        <button
-          type="button"
-          onClick={onNavigateUpload}
-          className="rounded-full border-2 border-ink bg-lime px-6 py-3 text-sm font-black text-ink transition-transform active:scale-95 dark:border-lime"
-        >
-          掃描第一張課表
-        </button>
-      </main>
-    );
-  }
 
   const allSlots = schedule.courses.flatMap((course) => course.timeSlots);
   const showWeekend = allSlots.some((slot) => slot.dayOfWeek === "SA" || slot.dayOfWeek === "SU");
@@ -129,12 +113,7 @@ export function WeeklyTimetablePage({ onNavigateUpload }: WeeklyTimetablePagePro
     "rounded-full border-2 border-ink px-3 py-1.5 text-xs font-black text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 dark:border-white dark:text-white";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
-      <header>
-        <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">週課表</h1>
-        <p className="mt-1 text-sm font-bold text-ink/50 dark:text-white/50">{rangeLabel}</p>
-      </header>
-
+    <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => setWeekOffset((prev) => prev - 1)} className={navButtonClass}>
           ‹ 上週
@@ -150,6 +129,7 @@ export function WeeklyTimetablePage({ onNavigateUpload }: WeeklyTimetablePagePro
         <button type="button" onClick={() => setWeekOffset((prev) => prev + 1)} className={navButtonClass}>
           下週 ›
         </button>
+        <span className="ml-auto text-xs font-bold text-ink/50 dark:text-white/50">{rangeLabel}</span>
       </div>
 
       <div className="overflow-x-auto rounded-3xl border-2 border-ink bg-white dark:border-white/20 dark:bg-white/5">
@@ -237,6 +217,6 @@ export function WeeklyTimetablePage({ onNavigateUpload }: WeeklyTimetablePagePro
           </div>
         </div>
       </div>
-    </main>
+    </section>
   );
 }
