@@ -3,11 +3,13 @@ import { HomePage } from "./pages/HomePage";
 import { UploadPage } from "./pages/UploadPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ManageCoursesPage } from "./pages/ManageCoursesPage";
+import { WeeklyTimetablePage } from "./pages/WeeklyTimetablePage";
 
-type View = "home" | "upload" | "manage" | "settings";
+type View = "home" | "week" | "upload" | "manage" | "settings";
 
 const TABS: { view: View; label: string }[] = [
   { view: "home", label: "今天課表" },
+  { view: "week", label: "週課表" },
   { view: "manage", label: "所有課程" },
   { view: "upload", label: "掃描課表" },
   { view: "settings", label: "設定" },
@@ -25,7 +27,7 @@ function App() {
               key={tab.view}
               type="button"
               onClick={() => setView(tab.view)}
-              className={`rounded-full px-4 py-2 text-sm font-black transition-colors ${
+              className={`rounded-full px-2 py-2 text-[13px] font-black transition-colors sm:px-4 sm:text-sm ${
                 view === tab.view
                   ? "bg-ink text-lime dark:bg-lime dark:text-ink"
                   : "text-ink/50 hover:text-ink dark:text-white/50 dark:hover:text-white"
@@ -37,6 +39,7 @@ function App() {
         </div>
       </nav>
       {view === "home" && <HomePage onNavigateUpload={() => setView("upload")} />}
+      {view === "week" && <WeeklyTimetablePage onNavigateUpload={() => setView("upload")} />}
       {view === "manage" && <ManageCoursesPage onNavigateUpload={() => setView("upload")} />}
       {view === "upload" && <UploadPage onNavigateHome={() => setView("home")} />}
       {view === "settings" && <SettingsPage />}
