@@ -1,5 +1,5 @@
 import { createEmptySchedule, scheduleSchema, type Holiday, type Schedule } from "../../schema/schedule";
-import type { Course } from "../../schema/course";
+import type { Course, Recurrence } from "../../schema/course";
 
 const STORAGE_KEY = "class-schedule-scanner:schedule";
 
@@ -17,12 +17,24 @@ function persist(schedule: Schedule): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(schedule));
 }
 
-/** Same course name + at least one identical time slot counts as a duplicate. */
+/**
+ * A one-off makeup class ("補課") commonly reuses the regular course's name,
+ * day-of-week, and time — it's just moved to a different date. Without this
+ * check, saving it would look identical to the recurring weekly class it's
+ * making up for and get silently dropped as a duplicate.
+ */
+function sameRecurrence(a: Recurrence, b: Recurrence): boolean {
+  if (a.type !== b.type) return false;
+  return a.type === "once" && b.type === "once" ? a.date === b.date : true;
+}
+
+/** Same course name + recurrence + at least one identical time slot counts as a duplicate. */
 function isDuplicate(existing: Course[], candidate: Course): boolean {
   const normalizedName = candidate.name.trim().toLowerCase();
   return existing.some(
     (course) =>
       course.name.trim().toLowerCase() === normalizedName &&
+      sameRecurrence(course.recurrence, candidate.recurrence) &&
       course.timeSlots.some((slot) =>
         candidate.timeSlots.some(
           (candidateSlot) =>
