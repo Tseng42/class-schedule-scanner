@@ -3,7 +3,7 @@ import { HomePage } from "./pages/HomePage";
 import { UploadPage } from "./pages/UploadPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ManageCoursesPage } from "./pages/ManageCoursesPage";
-import { useSwipeNavigation } from "./hooks/useSwipeNavigation";
+import { useSwipeNavigation, type DragProgress } from "./hooks/useSwipeNavigation";
 import { useAppUpdate } from "./hooks/useAppUpdate";
 
 type View = "home" | "upload" | "manage" | "settings";
@@ -47,32 +47,14 @@ function App() {
     setView(target);
   };
 
-  useSwipeNavigation(contentRef, {
-    canSwipe: (swipeDirection) => {
-      const current = TABS.findIndex((tab) => tab.view === view);
-      return Boolean(TABS[current + (swipeDirection === "next" ? 1 : -1)]);
-    },
-    onSwipe: (swipeDirection) => {
-      const current = TABS.findIndex((tab) => tab.view === view);
-      const target = TABS[current + (swipeDirection === "next" ? 1 : -1)];
-      if (target) navigateTo(target.view);
-    },
-  });
-
   const snapIndicatorTo = (target: View) => {
     const button = tabRefs.current.get(target);
     const indicator = indicatorRef.current;
     if (!button || !indicator) return;
+    indicator.style.transition = "";
     indicator.style.width = `${button.offsetWidth}px`;
     indicator.style.transform = `translateX(${button.offsetLeft}px)`;
   };
-
-  // Slides the pill indicator to sit behind whichever tab is active, in both
-  // dimensions, so switching tabs (by tap, swipe, or drag-release) glides
-  // instead of jumping.
-  useLayoutEffect(() => {
-    snapIndicatorTo(view);
-  }, [view]);
 
   const applyHoverPreview = (hovered: View) => {
     for (const [tabView, button] of tabRefs.current) {
@@ -87,6 +69,53 @@ function App() {
   };
 
   const restoreActiveClasses = () => applyHoverPreview(view);
+
+  // Makes the pill track a content swipe the same way it tracks a direct drag on
+  // itself: interpolate between the current and target tab's position/width as
+  // the content is dragged, and preview the text-color swap past the midpoint.
+  const handleContentDragProgress = (state: DragProgress | null) => {
+    const indicator = indicatorRef.current;
+    if (!indicator) return;
+    if (!state) {
+      snapIndicatorTo(view);
+      restoreActiveClasses();
+      return;
+    }
+    const current = TABS.findIndex((tab) => tab.view === view);
+    const targetTab = TABS[current + (state.direction === "next" ? 1 : -1)];
+    const currentButton = tabRefs.current.get(view);
+    const targetButton = targetTab && tabRefs.current.get(targetTab.view);
+    if (!currentButton || !targetButton) return;
+
+    indicator.style.transition = "none";
+    indicator.style.transform = `translateX(${
+      currentButton.offsetLeft + (targetButton.offsetLeft - currentButton.offsetLeft) * state.progress
+    }px)`;
+    indicator.style.width = `${
+      currentButton.offsetWidth + (targetButton.offsetWidth - currentButton.offsetWidth) * state.progress
+    }px`;
+    applyHoverPreview(state.progress > 0.5 ? targetTab.view : view);
+  };
+
+  useSwipeNavigation(contentRef, {
+    canSwipe: (swipeDirection) => {
+      const current = TABS.findIndex((tab) => tab.view === view);
+      return Boolean(TABS[current + (swipeDirection === "next" ? 1 : -1)]);
+    },
+    onSwipe: (swipeDirection) => {
+      const current = TABS.findIndex((tab) => tab.view === view);
+      const target = TABS[current + (swipeDirection === "next" ? 1 : -1)];
+      if (target) navigateTo(target.view);
+    },
+    onDragProgress: handleContentDragProgress,
+  });
+
+  // Slides the pill indicator to sit behind whichever tab is active, in both
+  // dimensions, so switching tabs (by tap, swipe, or drag-release) glides
+  // instead of jumping.
+  useLayoutEffect(() => {
+    snapIndicatorTo(view);
+  }, [view]);
 
   const nearestTabAt = (clientX: number): View => {
     let closest: View = view;

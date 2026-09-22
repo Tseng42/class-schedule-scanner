@@ -31,9 +31,17 @@ function dampen(dx: number): number {
   return Math.sign(dx) * (MAX_DRAG + overflow * 0.15);
 }
 
+export interface DragProgress {
+  direction: SwipeDirection;
+  /** 0 at the start of the drag, 1 once it's dragged far enough to commit. */
+  progress: number;
+}
+
 interface UseSwipeNavigationOptions {
   canSwipe: (direction: SwipeDirection) => boolean;
   onSwipe: (direction: SwipeDirection) => void;
+  /** Live drag updates while the content is being dragged; null once the gesture ends without committing. */
+  onDragProgress?: (state: DragProgress | null) => void;
 }
 
 /**
@@ -85,7 +93,18 @@ export function useSwipeNavigation(
       }
 
       event.preventDefault();
-      el.style.transform = `translateX(${dampen(dx)}px)`;
+      const damped = dampen(dx);
+      el.style.transform = `translateX(${damped}px)`;
+
+      const direction: SwipeDirection = damped < 0 ? "next" : "prev";
+      if (optionsRef.current.canSwipe(direction)) {
+        optionsRef.current.onDragProgress?.({
+          direction,
+          progress: Math.min(1, Math.abs(damped) / COMMIT_DISTANCE),
+        });
+      } else {
+        optionsRef.current.onDragProgress?.(null);
+      }
     };
 
     const handleEnd = (event: TouchEvent) => {
@@ -103,6 +122,7 @@ export function useSwipeNavigation(
       if (!touch) {
         node.style.transition = `transform ${SPRING_DURATION}ms ${SPRING_BACK}`;
         node.style.transform = "translateX(0px)";
+        optionsRef.current.onDragProgress?.(null);
         return;
       }
 
@@ -115,6 +135,9 @@ export function useSwipeNavigation(
         optionsRef.current.canSwipe(direction);
 
       if (committed) {
+        // Leave the last onDragProgress (already at progress 1) as-is — the
+        // indicator should stay put through the exit + onSwipe handoff, not
+        // reset and re-animate.
         const exitTo = direction === "next" ? -node.clientWidth * 0.4 : node.clientWidth * 0.4;
         node.style.transition = `transform ${EXIT_DURATION}ms ${EXIT_EASE}`;
         node.style.transform = `translateX(${exitTo}px)`;
@@ -122,6 +145,7 @@ export function useSwipeNavigation(
       } else {
         node.style.transition = `transform ${SPRING_DURATION}ms ${SPRING_BACK}`;
         node.style.transform = "translateX(0px)";
+        optionsRef.current.onDragProgress?.(null);
       }
     };
 
