@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { HomePage } from "./pages/HomePage";
 import { UploadPage } from "./pages/UploadPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -16,13 +16,28 @@ const TABS: { view: View; label: string }[] = [
   { view: "settings", label: "設定" },
 ];
 
+const DRAG_THRESHOLD = 8;
+const ACTIVE_TOKENS = ["text-lime", "dark:text-ink"];
+const INACTIVE_TOKENS = ["text-ink/50", "hover:text-ink", "dark:text-white/50", "dark:hover:text-white"];
+
+interface DragState {
+  pointerId: number;
+  startX: number;
+  dragging: boolean;
+  minLeft: number;
+  maxLeft: number;
+  indicatorWidth: number;
+}
+
 function App() {
   const [view, setView] = useState<View>("home");
   const [direction, setDirection] = useState<Direction | null>(null);
   const updateReady = useAppUpdate();
   const contentRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<View, HTMLButtonElement>());
+  const dragStateRef = useRef<DragState | null>(null);
 
   const navigateTo = (target: View) => {
     const from = TABS.findIndex((tab) => tab.view === view);
@@ -44,20 +59,124 @@ function App() {
     },
   });
 
-  // Slides the pill indicator to sit behind whichever tab is active, in both
-  // dimensions, so switching tabs (by tap or swipe) glides instead of jumping.
-  useLayoutEffect(() => {
-    const button = tabRefs.current.get(view);
+  const snapIndicatorTo = (target: View) => {
+    const button = tabRefs.current.get(target);
     const indicator = indicatorRef.current;
     if (!button || !indicator) return;
     indicator.style.width = `${button.offsetWidth}px`;
     indicator.style.transform = `translateX(${button.offsetLeft}px)`;
+  };
+
+  // Slides the pill indicator to sit behind whichever tab is active, in both
+  // dimensions, so switching tabs (by tap, swipe, or drag-release) glides
+  // instead of jumping.
+  useLayoutEffect(() => {
+    snapIndicatorTo(view);
   }, [view]);
+
+  const applyHoverPreview = (hovered: View) => {
+    for (const [tabView, button] of tabRefs.current) {
+      if (tabView === hovered) {
+        button.classList.remove(...INACTIVE_TOKENS);
+        button.classList.add(...ACTIVE_TOKENS);
+      } else {
+        button.classList.remove(...ACTIVE_TOKENS);
+        button.classList.add(...INACTIVE_TOKENS);
+      }
+    }
+  };
+
+  const restoreActiveClasses = () => applyHoverPreview(view);
+
+  const nearestTabAt = (clientX: number): View => {
+    let closest: View = view;
+    let closestDistance = Infinity;
+    for (const tab of TABS) {
+      const button = tabRefs.current.get(tab.view);
+      if (!button) continue;
+      const rect = button.getBoundingClientRect();
+      const distance = Math.abs(clientX - (rect.left + rect.width / 2));
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closest = tab.view;
+      }
+    }
+    return closest;
+  };
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (dragStateRef.current) return;
+    const indicator = indicatorRef.current;
+    const first = tabRefs.current.get(TABS[0].view);
+    const last = tabRefs.current.get(TABS[TABS.length - 1].view);
+    if (!indicator || !first || !last) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      dragging: false,
+      minLeft: first.offsetLeft,
+      maxLeft: last.offsetLeft + last.offsetWidth - indicator.offsetWidth,
+      indicatorWidth: indicator.offsetWidth,
+    };
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const state = dragStateRef.current;
+    const container = navRef.current;
+    const indicator = indicatorRef.current;
+    if (!state || state.pointerId !== event.pointerId || !container || !indicator) return;
+
+    if (!state.dragging) {
+      if (Math.abs(event.clientX - state.startX) < DRAG_THRESHOLD) return;
+      state.dragging = true;
+      indicator.style.transition = "none";
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const relativeX = event.clientX - containerRect.left - container.clientLeft;
+    const clampedLeft = Math.min(state.maxLeft, Math.max(state.minLeft, relativeX - state.indicatorWidth / 2));
+    indicator.style.transform = `translateX(${clampedLeft}px)`;
+    applyHoverPreview(nearestTabAt(event.clientX));
+  };
+
+  const endDrag = (event: ReactPointerEvent<HTMLDivElement>, commit: boolean) => {
+    const state = dragStateRef.current;
+    if (!state || state.pointerId !== event.pointerId) return;
+    dragStateRef.current = null;
+    if (!state.dragging) return;
+
+    if (indicatorRef.current) indicatorRef.current.style.transition = "";
+    if (commit) {
+      const target = nearestTabAt(event.clientX);
+      if (target === view) {
+        // navigateTo no-ops for the same tab, so the position-sync effect won't
+        // re-run — snap back to the button ourselves instead of leaving the
+        // indicator stranded wherever the drag ended.
+        snapIndicatorTo(target);
+        restoreActiveClasses();
+      } else {
+        navigateTo(target);
+      }
+    } else {
+      snapIndicatorTo(view);
+      restoreActiveClasses();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-cream dark:bg-ink">
       <nav className="mx-auto flex max-w-2xl flex-wrap gap-1 px-4 pt-5">
-        <div className="relative flex flex-wrap gap-1 rounded-full border-2 border-ink bg-white p-1 dark:border-white/20 dark:bg-white/5">
+        <div
+          ref={navRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={(event) => endDrag(event, true)}
+          onPointerCancel={(event) => endDrag(event, false)}
+          className="relative flex touch-none flex-wrap gap-1 rounded-full border-2 border-ink bg-white p-1 dark:border-white/20 dark:bg-white/5"
+        >
           <div
             ref={indicatorRef}
             className="absolute inset-y-1 left-0 w-0 rounded-full bg-ink transition-[transform,width] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:bg-lime"
