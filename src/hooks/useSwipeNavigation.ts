@@ -12,10 +12,15 @@ const EXIT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const SPRING_BACK = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 const SPRING_DURATION = 320;
 
+/**
+ * Touch and Pointer events both fire for the same physical touch, so a region with its
+ * own pointer-driven drag (e.g. the tab-bar pill) must opt out here — otherwise this
+ * document-level touch listener would ALSO drag the page content underneath it.
+ */
 function startsInsideScrollerOrField(target: EventTarget | null): boolean {
   let element = target instanceof Element ? target : null;
   while (element && element !== document.body) {
-    if (element.matches("input, textarea, select")) return true;
+    if (element.matches("input, textarea, select, [data-swipe-ignore]")) return true;
     const { overflowX } = getComputedStyle(element);
     if ((overflowX === "auto" || overflowX === "scroll") && element.scrollWidth > element.clientWidth + 1) {
       return true;

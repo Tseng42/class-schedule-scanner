@@ -189,6 +189,7 @@ function App() {
       <nav className="mx-auto flex max-w-2xl flex-wrap gap-1 px-4 pt-5">
         <div
           ref={navRef}
+          data-swipe-ignore
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={(event) => endDrag(event, true)}
