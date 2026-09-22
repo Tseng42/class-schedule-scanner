@@ -32,9 +32,8 @@ function dampen(dx: number): number {
 }
 
 export interface DragProgress {
-  direction: SwipeDirection;
-  /** 0 at the start of the drag, 1 once it's dragged far enough to commit. */
-  progress: number;
+  /** The same dampened, signed px offset applied to the dragged content. */
+  dx: number;
 }
 
 interface UseSwipeNavigationOptions {
@@ -95,16 +94,7 @@ export function useSwipeNavigation(
       event.preventDefault();
       const damped = dampen(dx);
       el.style.transform = `translateX(${damped}px)`;
-
-      const direction: SwipeDirection = damped < 0 ? "next" : "prev";
-      if (optionsRef.current.canSwipe(direction)) {
-        optionsRef.current.onDragProgress?.({
-          direction,
-          progress: Math.min(1, Math.abs(damped) / COMMIT_DISTANCE),
-        });
-      } else {
-        optionsRef.current.onDragProgress?.(null);
-      }
+      optionsRef.current.onDragProgress?.({ dx: damped });
     };
 
     const handleEnd = (event: TouchEvent) => {
@@ -135,9 +125,9 @@ export function useSwipeNavigation(
         optionsRef.current.canSwipe(direction);
 
       if (committed) {
-        // Leave the last onDragProgress (already at progress 1) as-is — the
-        // indicator should stay put through the exit + onSwipe handoff, not
-        // reset and re-animate.
+        // Leave the last onDragProgress value as-is — the caller's indicator
+        // should stay put through the exit + onSwipe handoff, then let the
+        // resulting navigation snap it to the real destination.
         const exitTo = direction === "next" ? -node.clientWidth * 0.4 : node.clientWidth * 0.4;
         node.style.transition = `transform ${EXIT_DURATION}ms ${EXIT_EASE}`;
         node.style.transform = `translateX(${exitTo}px)`;

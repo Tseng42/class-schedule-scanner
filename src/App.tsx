@@ -70,31 +70,20 @@ function App() {
 
   const restoreActiveClasses = () => applyHoverPreview(view);
 
-  // Makes the pill track a content swipe the same way it tracks a direct drag on
-  // itself: interpolate between the current and target tab's position/width as
-  // the content is dragged, and preview the text-color swap past the midpoint.
+  // Mirrors the content's own drag motion 1:1 (same signed px offset), so the pill
+  // visibly moves WITH the finger — consistent with how dragging the pill itself
+  // behaves — instead of pre-empting the landing tab's position. Width stays fixed
+  // at the current tab's while dragging; only the post-commit snap resizes it.
   const handleContentDragProgress = (state: DragProgress | null) => {
     const indicator = indicatorRef.current;
-    if (!indicator) return;
+    const currentButton = tabRefs.current.get(view);
+    if (!indicator || !currentButton) return;
     if (!state) {
       snapIndicatorTo(view);
-      restoreActiveClasses();
       return;
     }
-    const current = TABS.findIndex((tab) => tab.view === view);
-    const targetTab = TABS[current + (state.direction === "next" ? 1 : -1)];
-    const currentButton = tabRefs.current.get(view);
-    const targetButton = targetTab && tabRefs.current.get(targetTab.view);
-    if (!currentButton || !targetButton) return;
-
     indicator.style.transition = "none";
-    indicator.style.transform = `translateX(${
-      currentButton.offsetLeft + (targetButton.offsetLeft - currentButton.offsetLeft) * state.progress
-    }px)`;
-    indicator.style.width = `${
-      currentButton.offsetWidth + (targetButton.offsetWidth - currentButton.offsetWidth) * state.progress
-    }px`;
-    applyHoverPreview(state.progress > 0.5 ? targetTab.view : view);
+    indicator.style.transform = `translateX(${currentButton.offsetLeft + state.dx}px)`;
   };
 
   useSwipeNavigation(contentRef, {
