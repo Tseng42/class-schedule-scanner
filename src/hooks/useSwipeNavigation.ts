@@ -5,7 +5,8 @@ export type SwipeDirection = "next" | "prev";
 const COMMIT_DISTANCE = 60;
 const HORIZONTAL_BIAS = 1.5;
 const INTENT_THRESHOLD = 10;
-const MAX_DRAG = 120;
+const AXIS_DECISION_FALLBACK = 40;
+const MAX_DRAG = 220;
 const EXIT_DURATION = 160;
 const EXIT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const SPRING_BACK = "cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -24,11 +25,11 @@ function startsInsideScrollerOrField(target: EventTarget | null): boolean {
   return false;
 }
 
-/** 1:1 tracking up to MAX_DRAG, heavy resistance beyond it — the page still moves, just reluctantly. */
+/** 1:1 tracking up to MAX_DRAG, gentle resistance beyond it — the page still moves, just reluctantly. */
 function dampen(dx: number): number {
   if (Math.abs(dx) <= MAX_DRAG) return dx;
   const overflow = Math.abs(dx) - MAX_DRAG;
-  return Math.sign(dx) * (MAX_DRAG + overflow * 0.15);
+  return Math.sign(dx) * (MAX_DRAG + overflow * 0.3);
 }
 
 export interface DragProgress {
@@ -83,12 +84,22 @@ export function useSwipeNavigation(
       const dy = touch.clientY - startY;
 
       if (!dragging) {
-        if (Math.abs(dx) < INTENT_THRESHOLD && Math.abs(dy) < INTENT_THRESHOLD) return;
-        if (Math.abs(dx) < Math.abs(dy) * HORIZONTAL_BIAS) {
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        if (absDx < INTENT_THRESHOLD && absDy < INTENT_THRESHOLD) return;
+        const decisive = absDx >= absDy * HORIZONTAL_BIAS || absDy >= absDx * HORIZONTAL_BIAS;
+        // A steady diagonal drag never resolves a clean 1.5x margin either
+        // way — once there's been enough total movement, stop waiting for
+        // clarity that isn't coming and just go with whichever axis leads.
+        const forceDecision = Math.max(absDx, absDy) >= AXIS_DECISION_FALLBACK;
+        if (!decisive && !forceDecision) return; // still ambiguous, wait for a clearer sample
+        if (absDx >= absDy) {
+          dragging = true;
+        } else {
+          // Vertical (or a forced tie toward vertical) — let the page scroll normally.
           tracking = false;
           return;
         }
-        dragging = true;
       }
 
       event.preventDefault();
@@ -117,12 +128,13 @@ export function useSwipeNavigation(
       }
 
       const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
+      // The horizontal-vs-vertical call was already made (and locked in) back in
+      // handleMove when dragging turned true — re-checking it here against the
+      // *cumulative* dy would punish a long swipe for the natural vertical drift
+      // a hand picks up over a bigger motion, springing it back despite a very
+      // deliberate, far-enough drag.
       const direction: SwipeDirection = dx < 0 ? "next" : "prev";
-      const committed =
-        Math.abs(dx) >= COMMIT_DISTANCE &&
-        Math.abs(dx) >= Math.abs(dy) * HORIZONTAL_BIAS &&
-        optionsRef.current.canSwipe(direction);
+      const committed = Math.abs(dx) >= COMMIT_DISTANCE && optionsRef.current.canSwipe(direction);
 
       if (committed) {
         // Leave the last onDragProgress value as-is — the caller's indicator
