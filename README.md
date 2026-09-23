@@ -27,4 +27,4 @@ React + Vite + TypeScript + Tailwind CSS,支援 PWA(可安裝到手機主畫面)
 
 ## 架構
 
-詳見 `src/schema/`(資料結構)與 `src/services/ai/`(AI 辨識呼叫,抽成可替換的 `ScheduleExtractor` 介面 —— 目前用的是 Claude,`googleVisionExtractor.ts` 是保留但未啟用的 Google Gemini 實作,想換回去只要改 `src/services/ai/index.ts` 一行)。
+詳見 `src/schema/`(資料結構)與 `src/services/ai/`(AI 辨識呼叫,抽成可替換的 `ScheduleExtractor` 介面 —— 目前只有 Claude 的實作)。
