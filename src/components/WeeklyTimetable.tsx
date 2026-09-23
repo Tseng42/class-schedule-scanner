@@ -1,16 +1,13 @@
 import { useState } from "react";
-import { DAY_OF_WEEK_LABELS, type DayOfWeek } from "../schema/course";
+import { DAY_OF_WEEK_LABELS } from "../schema/course";
 import type { Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
-import { getHolidayName, getOccurrencesForDate, type CourseOccurrence } from "../services/scheduling/nextClass";
-import { parseDateKey, toDateKey } from "../services/scheduling/dateKey";
-import { listEvents } from "../services/scheduling/events";
+import { buildWeekLayout, formatMonthDay, BLOCK_COLORS } from "../services/scheduling/weekLayout";
+import { shareScheduleCard } from "../services/share/scheduleCard";
 
-const DAY_ORDER: DayOfWeek[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const HOUR_HEIGHT = 56;
 const GUTTER_WIDTH = 40;
 const MIN_COLUMN_WIDTH = 52;
-const BLOCK_COLORS = ["bg-lime", "bg-pink", "bg-sky", "bg-mint"];
 
 interface WeeklyTimetableProps {
   schedule: Schedule;
@@ -18,128 +15,34 @@ interface WeeklyTimetableProps {
   settings: AppSettings;
 }
 
-interface LaidOutOccurrence {
-  occurrence: CourseOccurrence;
-  start: number;
-  end: number;
-  lane: number;
-  lanes: number;
-}
-
-function toMinutes(time: string): number {
-  const [hour, minute] = time.split(":").map(Number);
-  return hour * 60 + minute;
-}
-
-function shiftDays(date: Date, days: number): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
-}
-
-function mondayOf(date: Date): Date {
-  return shiftDays(date, -((date.getDay() + 6) % 7));
-}
-
-function formatMonthDay(date: Date): string {
-  return `${date.getMonth() + 1}/${date.getDate()}`;
-}
-
-function weeksBetween(a: Date, b: Date): number {
-  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-  return Math.round((b.getTime() - a.getTime()) / msPerWeek);
-}
-
-/** Splits overlapping courses in the same day into side-by-side lanes so none hide each other. */
-function layoutDay(occurrences: CourseOccurrence[]): LaidOutOccurrence[] {
-  const items: LaidOutOccurrence[] = occurrences.map((occurrence) => ({
-    occurrence,
-    start: toMinutes(occurrence.timeSlot.startTime),
-    end: toMinutes(occurrence.timeSlot.endTime),
-    lane: 0,
-    lanes: 1,
-  }));
-
-  let group: LaidOutOccurrence[] = [];
-  let groupEnd = -1;
-
-  const flushGroup = () => {
-    if (group.length === 0) return;
-    const lanes = Math.max(...group.map((item) => item.lane)) + 1;
-    for (const item of group) item.lanes = lanes;
-  };
-
-  for (const item of items) {
-    if (group.length > 0 && item.start >= groupEnd) {
-      flushGroup();
-      group = [];
-      groupEnd = -1;
-    }
-    const usedLanes = new Set(group.filter((other) => other.end > item.start).map((other) => other.lane));
-    let lane = 0;
-    while (usedLanes.has(lane)) lane++;
-    item.lane = lane;
-    group.push(item);
-    groupEnd = Math.max(groupEnd, item.end);
-  }
-  flushGroup();
-
-  return items;
-}
-
 export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetableProps) {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
 
-  const allSlots = schedule.courses.flatMap((course) => course.timeSlots);
-  const showWeekend = allSlots.some((slot) => slot.dayOfWeek === "SA" || slot.dayOfWeek === "SU");
-  const visibleDays = DAY_ORDER.slice(0, showWeekend ? 7 : 5);
-
-  const startHour = Math.floor(Math.min(...allSlots.map((slot) => toMinutes(slot.startTime))) / 60);
-  const endHour = Math.max(
-    Math.ceil(Math.max(...allSlots.map((slot) => toMinutes(slot.endTime))) / 60),
-    startHour + 4,
+  const { columns, startHour, hours, colorIndexByCourseId, rangeLabel, semesterWeekLabel } = buildWeekLayout(
+    schedule,
+    settings,
+    today,
+    weekOffset,
   );
-  const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
   const totalHeight = hours.length * HOUR_HEIGHT;
-
-  const weekStart = shiftDays(mondayOf(today), weekOffset * 7);
-  const todayKey = toDateKey(today);
-  const colorIndexByCourseId = new Map(schedule.courses.map((course, index) => [course.id, index % BLOCK_COLORS.length]));
-
-  const eventCountByDate = new Map<string, number>();
-  for (const item of listEvents(schedule)) {
-    eventCountByDate.set(item.event.date, (eventCountByDate.get(item.event.date) ?? 0) + 1);
-  }
-
-  const columns = visibleDays.map((day, index) => {
-    const date = shiftDays(weekStart, index);
-    return {
-      day,
-      date,
-      isToday: toDateKey(date) === todayKey,
-      eventCount: eventCountByDate.get(toDateKey(date)) ?? 0,
-      holidayName: getHolidayName(schedule, toDateKey(date)),
-      items: layoutDay(getOccurrencesForDate(schedule, date, settings, true)),
-    };
-  });
-
   const gridTemplateColumns = `${GUTTER_WIDTH}px repeat(${columns.length}, minmax(0, 1fr))`;
-  const rangeLabel = `${formatMonthDay(columns[0].date)} – ${formatMonthDay(columns[columns.length - 1].date)}`;
-
-  const semesterWeekLabel = (() => {
-    if (!settings.semesterStartDate) return null;
-    const semesterStartMonday = mondayOf(parseDateKey(settings.semesterStartDate));
-    const week = weeksBetween(semesterStartMonday, weekStart) + 1;
-    if (week < 1) return null;
-    if (settings.semesterEndDate) {
-      const semesterEndMonday = mondayOf(parseDateKey(settings.semesterEndDate));
-      const totalWeeks = weeksBetween(semesterStartMonday, semesterEndMonday) + 1;
-      if (week > totalWeeks) return null;
-      return `第 ${week} 週 / 共 ${totalWeeks} 週`;
-    }
-    return `第 ${week} 週`;
-  })();
 
   const navButtonClass =
     "rounded-full border-2 border-ink px-3 py-1.5 text-xs font-black text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 dark:border-white dark:text-white";
+
+  const handleShare = async () => {
+    setIsSharing(true);
+    setShareError(null);
+    try {
+      await shareScheduleCard(schedule, settings, today, weekOffset);
+    } catch (error) {
+      setShareError(error instanceof Error ? error.message : "產生圖片失敗");
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   return (
     <section className="flex flex-col gap-3">
@@ -158,10 +61,19 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
         <button type="button" onClick={() => setWeekOffset((prev) => prev + 1)} className={navButtonClass}>
           下週 ›
         </button>
+        <button
+          type="button"
+          onClick={() => void handleShare()}
+          disabled={isSharing}
+          className="rounded-full bg-ink px-3 py-1.5 text-xs font-black text-lime transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-lime dark:text-ink"
+        >
+          {isSharing ? "產生中…" : "分享課表"}
+        </button>
         <span className="ml-auto text-xs font-bold text-ink/50 dark:text-white/50">
           {semesterWeekLabel ? `${semesterWeekLabel} · ${rangeLabel}` : rangeLabel}
         </span>
       </div>
+      {shareError && <p className="text-xs font-bold text-pink-dark">{shareError}</p>}
 
       <div className="overflow-x-auto rounded-3xl border-2 border-ink bg-white dark:border-white/20 dark:bg-white/5">
         <div style={{ minWidth: GUTTER_WIDTH + columns.length * MIN_COLUMN_WIDTH }}>
