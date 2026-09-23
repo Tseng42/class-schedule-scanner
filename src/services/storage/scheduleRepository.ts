@@ -1,6 +1,7 @@
 import { createEmptySchedule, scheduleSchema, type Holiday, type Schedule } from "../../schema/schedule";
 import type { Course, Recurrence } from "../../schema/course";
 import { writeJSON } from "./persist";
+import { generateId } from "../../lib/id";
 
 const STORAGE_KEY = "class-schedule-scanner:schedule";
 
@@ -80,6 +81,26 @@ export function addHoliday(holiday: Holiday): Schedule {
   const updated: Schedule = { ...current, holidays: [...(current.holidays ?? []), holiday] };
   persist(updated);
   return updated;
+}
+
+export interface AddHolidaysResult {
+  schedule: Schedule;
+  addedCount: number;
+  skippedCount: number;
+}
+
+/** Same date range as an existing holiday counts as a duplicate — safe to call repeatedly. */
+export function addHolidays(candidates: { name: string; startDate: string; endDate: string }[]): AddHolidaysResult {
+  const current = loadSchedule();
+  const existing = current.holidays ?? [];
+  const toAdd = candidates.filter(
+    (candidate) =>
+      !existing.some((item) => item.startDate === candidate.startDate && item.endDate === candidate.endDate),
+  );
+  const newHolidays: Holiday[] = toAdd.map((candidate) => ({ id: generateId(), ...candidate }));
+  const updated: Schedule = { ...current, holidays: [...existing, ...newHolidays] };
+  persist(updated);
+  return { schedule: updated, addedCount: newHolidays.length, skippedCount: candidates.length - newHolidays.length };
 }
 
 export function removeHoliday(holidayId: string): Schedule {

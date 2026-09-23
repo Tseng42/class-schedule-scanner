@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { addHoliday, loadSchedule, removeHoliday } from "../services/storage/scheduleRepository";
+import { addHoliday, addHolidays, loadSchedule, removeHoliday } from "../services/storage/scheduleRepository";
+import { OFFICIAL_HOLIDAYS_TW_2026 } from "../data/officialHolidays";
 import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
 import { generateIcsContent } from "../services/ics/exportIcs";
 import { formatDuration } from "../services/scheduling/nextClass";
@@ -260,6 +261,12 @@ export function SettingsPage() {
           onRemove={(holidayId) => {
             const updated = withStorageErrorHandling(() => removeHoliday(holidayId));
             if (updated) setSchedule(updated);
+          }}
+          onAddOfficial={() => {
+            const result = withStorageErrorHandling(() => addHolidays(OFFICIAL_HOLIDAYS_TW_2026));
+            if (!result) return null;
+            setSchedule(result.schedule);
+            return { addedCount: result.addedCount, skippedCount: result.skippedCount };
           }}
         />
       </AccordionSection>

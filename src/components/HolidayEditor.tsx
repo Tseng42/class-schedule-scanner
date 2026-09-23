@@ -7,18 +7,31 @@ interface HolidayEditorProps {
   holidays: Holiday[];
   onAdd: (holiday: Holiday) => void;
   onRemove: (holidayId: string) => void;
+  onAddOfficial: () => { addedCount: number; skippedCount: number } | null;
 }
 
 const inputClass =
   "rounded-xl border-2 border-ink/20 bg-white px-3 py-1.5 text-sm font-bold text-ink focus:border-ink focus:outline-none";
 
-export function HolidayEditor({ holidays, onAdd, onRemove }: HolidayEditorProps) {
+export function HolidayEditor({ holidays, onAdd, onRemove, onAddOfficial }: HolidayEditorProps) {
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [officialFlash, setOfficialFlash] = useState<string | null>(null);
 
   const sorted = [...holidays].sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  const handleAddOfficial = () => {
+    const result = onAddOfficial();
+    if (!result) return;
+    setOfficialFlash(
+      result.addedCount === 0
+        ? "都已經加過了"
+        : `已加入 ${result.addedCount} 筆${result.skippedCount > 0 ? `,${result.skippedCount} 筆已經有了` : ""}`,
+    );
+    setTimeout(() => setOfficialFlash(null), 3000);
+  };
 
   const handleAdd = () => {
     if (!startDate) {
@@ -41,6 +54,20 @@ export function HolidayEditor({ holidays, onAdd, onRemove }: HolidayEditorProps)
     <>
       <p className="text-xs font-bold opacity-70">
         國定假日、校慶這種「全部課程都不用上」的日子,填一次就會套用到所有課程:課表格會變灰,匯出的行事曆也會自動跳過。
+      </p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleAddOfficial}
+          className="self-start rounded-full border-2 border-ink px-4 py-2 text-xs font-black text-ink transition-transform active:scale-95"
+        >
+          一鍵加入台灣 2026 國定假日
+        </button>
+        {officialFlash && <span className="text-xs font-black">{officialFlash}</span>}
+      </div>
+      <p className="text-xs font-bold opacity-50">
+        資料來自行政院人事行政總處公告的辦公日曆表,不同學校的校曆可能有出入,加入後可以自行刪改。
       </p>
 
       {sorted.length > 0 && (
