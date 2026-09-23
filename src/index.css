@@ -60,6 +60,17 @@ body {
   }
 }
 
+@keyframes confetti-fall {
+  from {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--confetti-drift), 110vh) rotate(var(--confetti-rotate));
+    opacity: 0;
+  }
+}
+
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;

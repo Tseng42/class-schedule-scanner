@@ -11,6 +11,7 @@ import type { ExtractionResult } from "../../schema/extraction";
 import { addCourses } from "../../services/storage/scheduleRepository";
 import { dayOfWeekOf } from "../../services/scheduling/dateKey";
 import { generateId } from "../../lib/id";
+import { burstConfetti } from "../../lib/confetti";
 
 const DAY_OPTIONS: DayOfWeek[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 
@@ -124,6 +125,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
       setSaveError(null);
       const courses = draftsToCourses(drafts);
       const { addedCount, skippedCount } = addCourses(courses);
+      if (addedCount > 0) burstConfetti();
       onSaved({ added: addedCount, skipped: skippedCount });
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "儲存失敗");
