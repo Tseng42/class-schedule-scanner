@@ -130,7 +130,9 @@ function App() {
     const last = tabRefs.current.get(TABS[TABS.length - 1].view);
     if (!indicator || !first || !last) return;
 
-    event.currentTarget.setPointerCapture(event.pointerId);
+    // No setPointerCapture here — capturing before a drag is confirmed can
+    // suppress the native click on a plain tap (observed on iOS Safari), so
+    // it's deferred to handlePointerMove once DRAG_THRESHOLD is crossed.
     dragStateRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -150,6 +152,7 @@ function App() {
     if (!state.dragging) {
       if (Math.abs(event.clientX - state.startX) < DRAG_THRESHOLD) return;
       state.dragging = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
       indicator.style.transition = "none";
     }
 
