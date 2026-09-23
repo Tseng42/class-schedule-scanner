@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { DAY_OF_WEEK_LABELS, type DayOfWeek } from "../schema/course";
 import type { Schedule } from "../schema/schedule";
-import { getOccurrencesForDate, type CourseOccurrence } from "../services/scheduling/nextClass";
-import { toDateKey } from "../services/scheduling/dateKey";
+import type { AppSettings } from "../schema/settings";
+import { getHolidayName, getOccurrencesForDate, type CourseOccurrence } from "../services/scheduling/nextClass";
+import { parseDateKey, toDateKey } from "../services/scheduling/dateKey";
 import { listEvents } from "../services/scheduling/events";
 
 const DAY_ORDER: DayOfWeek[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
@@ -14,6 +15,7 @@ const BLOCK_COLORS = ["bg-lime", "bg-pink", "bg-sky", "bg-mint"];
 interface WeeklyTimetableProps {
   schedule: Schedule;
   today: Date;
+  settings: AppSettings;
 }
 
 interface LaidOutOccurrence {
@@ -39,6 +41,11 @@ function mondayOf(date: Date): Date {
 
 function formatMonthDay(date: Date): string {
   return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function weeksBetween(a: Date, b: Date): number {
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  return Math.round((b.getTime() - a.getTime()) / msPerWeek);
 }
 
 /** Splits overlapping courses in the same day into side-by-side lanes so none hide each other. */
@@ -78,7 +85,7 @@ function layoutDay(occurrences: CourseOccurrence[]): LaidOutOccurrence[] {
   return items;
 }
 
-export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
+export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetableProps) {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const allSlots = schedule.courses.flatMap((course) => course.timeSlots);
@@ -109,12 +116,27 @@ export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
       date,
       isToday: toDateKey(date) === todayKey,
       eventCount: eventCountByDate.get(toDateKey(date)) ?? 0,
-      items: layoutDay(getOccurrencesForDate(schedule, date, true)),
+      holidayName: getHolidayName(schedule, toDateKey(date)),
+      items: layoutDay(getOccurrencesForDate(schedule, date, settings, true)),
     };
   });
 
   const gridTemplateColumns = `${GUTTER_WIDTH}px repeat(${columns.length}, minmax(0, 1fr))`;
   const rangeLabel = `${formatMonthDay(columns[0].date)} – ${formatMonthDay(columns[columns.length - 1].date)}`;
+
+  const semesterWeekLabel = (() => {
+    if (!settings.semesterStartDate) return null;
+    const semesterStartMonday = mondayOf(parseDateKey(settings.semesterStartDate));
+    const week = weeksBetween(semesterStartMonday, weekStart) + 1;
+    if (week < 1) return null;
+    if (settings.semesterEndDate) {
+      const semesterEndMonday = mondayOf(parseDateKey(settings.semesterEndDate));
+      const totalWeeks = weeksBetween(semesterStartMonday, semesterEndMonday) + 1;
+      if (week > totalWeeks) return null;
+      return `第 ${week} 週 / 共 ${totalWeeks} 週`;
+    }
+    return `第 ${week} 週`;
+  })();
 
   const navButtonClass =
     "rounded-full border-2 border-ink px-3 py-1.5 text-xs font-black text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 dark:border-white dark:text-white";
@@ -136,7 +158,9 @@ export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
         <button type="button" onClick={() => setWeekOffset((prev) => prev + 1)} className={navButtonClass}>
           下週 ›
         </button>
-        <span className="ml-auto text-xs font-bold text-ink/50 dark:text-white/50">{rangeLabel}</span>
+        <span className="ml-auto text-xs font-bold text-ink/50 dark:text-white/50">
+          {semesterWeekLabel ? `${semesterWeekLabel} · ${rangeLabel}` : rangeLabel}
+        </span>
       </div>
 
       <div className="overflow-x-auto rounded-3xl border-2 border-ink bg-white dark:border-white/20 dark:bg-white/5">
@@ -158,6 +182,11 @@ export function WeeklyTimetable({ schedule, today }: WeeklyTimetableProps) {
                 <p className="mt-0.5 text-[10px] font-bold text-ink/40 dark:text-white/40">
                   {formatMonthDay(column.date)}
                 </p>
+                {column.holidayName && (
+                  <p className="mx-auto mt-0.5 w-fit rounded-full bg-mint px-1.5 text-[9px] font-black text-ink">
+                    {column.holidayName}
+                  </p>
+                )}
                 {column.eventCount > 0 && (
                   <p className="mx-auto mt-0.5 w-fit rounded-full bg-pink px-1.5 text-[9px] font-black text-ink">
                     {column.eventCount} 事項

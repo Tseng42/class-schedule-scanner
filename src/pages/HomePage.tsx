@@ -44,9 +44,9 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
     );
   }
 
-  const todayOccurrences = getOccurrencesForDate(schedule, now);
+  const todayOccurrences = getOccurrencesForDate(schedule, now, settings);
   const current = findCurrentOccurrence(todayOccurrences, now);
-  const next = getNextOccurrence(schedule, now);
+  const next = getNextOccurrence(schedule, now, settings);
   const todayLabel = now.toLocaleDateString("zh-TW", { month: "long", day: "numeric", weekday: "long" });
   const upcomingEvents = getUpcomingEvents(schedule, now);
 
@@ -120,7 +120,7 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
         </section>
       )}
 
-      <WeeklyTimetable schedule={schedule} today={now} />
+      <WeeklyTimetable schedule={schedule} today={now} settings={settings} />
 
       <button
         type="button"

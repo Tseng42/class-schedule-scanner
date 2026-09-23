@@ -24,7 +24,7 @@ export function useClassReminders(schedule: Schedule, settings: AppSettings, ena
     for (let offset = 0; offset < daysAhead; offset++) {
       const date = new Date(now);
       date.setDate(date.getDate() + offset);
-      occurrences.push(...getOccurrencesForDate(schedule, date));
+      occurrences.push(...getOccurrencesForDate(schedule, date, settings));
     }
 
     const cancelClassReminders = scheduleReminders(occurrences, settings.reminderMinutes, now, (occurrence) => {
