@@ -1,4 +1,5 @@
 import { appSettingsSchema, createDefaultSettings, type AppSettings } from "../../schema/settings";
+import { writeJSON } from "./persist";
 
 const STORAGE_KEY = "class-schedule-scanner:settings";
 
@@ -13,5 +14,12 @@ export function loadSettings(): AppSettings {
 }
 
 export function saveSettings(settings: AppSettings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  writeJSON(STORAGE_KEY, settings);
+}
+
+/** Validates and persists settings from an external source (e.g. a restored backup). */
+export function replaceSettings(settings: AppSettings): AppSettings {
+  const validated = appSettingsSchema.parse(settings);
+  saveSettings(validated);
+  return validated;
 }

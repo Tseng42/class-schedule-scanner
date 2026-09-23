@@ -6,6 +6,9 @@ import { formatDuration } from "../services/scheduling/nextClass";
 import { clearActiveApiKey, hasActiveStoredApiKey, setActiveApiKey } from "../services/ai";
 import { AccordionSection } from "../components/AccordionSection";
 import { HolidayEditor } from "../components/HolidayEditor";
+import { BackupRestore } from "../components/BackupRestore";
+import type { Schedule } from "../schema/schedule";
+import type { AppSettings } from "../schema/settings";
 
 type ReminderUnit = "minutes" | "hours" | "days";
 
@@ -53,6 +56,7 @@ export function SettingsPage() {
   const [reminderError, setReminderError] = useState<string | null>(null);
 
   const [exportError, setExportError] = useState<string | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
 
   const [notificationState, setNotificationState] = useState<NotificationState>(() =>
     typeof Notification === "undefined" ? "unsupported" : Notification.permission,
@@ -66,6 +70,16 @@ export function SettingsPage() {
   const [isEditingKey, setIsEditingKey] = useState(false);
   const [keyFlash, setKeyFlash] = useState<string | null>(null);
 
+  const withStorageErrorHandling = <T,>(action: () => T): T | undefined => {
+    try {
+      setStorageError(null);
+      return action();
+    } catch (error) {
+      setStorageError(error instanceof Error ? error.message : "儲存失敗");
+      return undefined;
+    }
+  };
+
   const handleSaveSettings = () => {
     const numeric = Number(reminderValueInput);
     if (!Number.isFinite(numeric) || numeric <= 0) {
@@ -75,10 +89,22 @@ export function SettingsPage() {
     setReminderError(null);
     const reminderMinutes = Math.round(numeric * UNIT_TO_MINUTES[reminderUnit]);
     const updated = { ...settings, reminderMinutes };
-    setSettings(updated);
-    saveSettings(updated);
+    const saved = withStorageErrorHandling(() => {
+      saveSettings(updated);
+      return updated;
+    });
+    if (!saved) return;
+    setSettings(saved);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2000);
+  };
+
+  const handleRestored = (restoredSchedule: Schedule, restoredSettings: AppSettings) => {
+    setSchedule(restoredSchedule);
+    setSettings(restoredSettings);
+    const derived = deriveUnitAndValue(restoredSettings.reminderMinutes);
+    setReminderUnit(derived.unit);
+    setReminderValueInput(derived.value);
   };
 
   const handleExportIcs = () => {
@@ -148,6 +174,10 @@ export function SettingsPage() {
       <header>
         <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">設定</h1>
       </header>
+
+      {storageError && (
+        <div className="rounded-3xl bg-pink p-4 text-sm font-bold text-ink">{storageError}</div>
+      )}
 
       <AccordionSection title="提醒 & 學期範圍" colorClass="bg-mint" defaultOpen>
         <label className="flex flex-col gap-1 text-sm">
@@ -223,9 +253,19 @@ export function SettingsPage() {
       >
         <HolidayEditor
           holidays={schedule.holidays ?? []}
-          onAdd={(holiday) => setSchedule(addHoliday(holiday))}
-          onRemove={(holidayId) => setSchedule(removeHoliday(holidayId))}
+          onAdd={(holiday) => {
+            const updated = withStorageErrorHandling(() => addHoliday(holiday));
+            if (updated) setSchedule(updated);
+          }}
+          onRemove={(holidayId) => {
+            const updated = withStorageErrorHandling(() => removeHoliday(holidayId));
+            if (updated) setSchedule(updated);
+          }}
         />
+      </AccordionSection>
+
+      <AccordionSection title="備份與還原" colorClass="bg-mint">
+        <BackupRestore onRestored={handleRestored} />
       </AccordionSection>
 
       <AccordionSection title="匯出到手機行事曆" colorClass="bg-sky">

@@ -11,6 +11,7 @@ import { loadSchedule, removeCourse, updateCourse } from "../services/storage/sc
 import { dayOfWeekOf } from "../services/scheduling/dateKey";
 import { generateId } from "../lib/id";
 import { CourseExtras } from "../components/CourseExtras";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 const DAY_OPTIONS: DayOfWeek[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 
@@ -34,6 +35,18 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
   const [courses, setCourses] = useState<Course[]>(() => loadSchedule().courses);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CourseDraft | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
+
+  const withStorageErrorHandling = <T,>(action: () => T): T | undefined => {
+    try {
+      setStorageError(null);
+      return action();
+    } catch (error) {
+      setStorageError(error instanceof Error ? error.message : "儲存失敗");
+      return undefined;
+    }
+  };
 
   const startEdit = (course: Course) => {
     setEditingId(course.id);
@@ -50,17 +63,20 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
     if (validateDraft(draft)) return;
     const original = courses.find((course) => course.id === editingId);
     if (!original) return;
-    const updated = updateCourse(editingId, draftToCourse(draft, original));
+    const updated = withStorageErrorHandling(() => updateCourse(editingId, draftToCourse(draft, original)));
+    if (!updated) return;
     setCourses(updated.courses);
     cancelEdit();
   };
 
   const handleExtrasChange = (next: Course) => {
-    setCourses(updateCourse(next.id, next).courses);
+    const updated = withStorageErrorHandling(() => updateCourse(next.id, next));
+    if (updated) setCourses(updated.courses);
   };
 
   const handleDelete = (courseId: string) => {
-    const updated = removeCourse(courseId);
+    const updated = withStorageErrorHandling(() => removeCourse(courseId));
+    if (!updated) return;
     setCourses(updated.courses);
     if (editingId === courseId) cancelEdit();
   };
@@ -154,6 +170,10 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
         <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">所有課程</h1>
         <p className="mt-1 text-sm font-bold text-ink/50 dark:text-white/50">共 {courses.length} 堂課</p>
       </header>
+
+      {storageError && (
+        <div className="rounded-3xl bg-pink p-4 text-sm font-bold text-ink">{storageError}</div>
+      )}
 
       <div className="flex flex-col gap-4">
         {courses.map((course) => {
@@ -348,7 +368,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(course.id)}
+                    onClick={() => setPendingDeleteId(course.id)}
                     className="rounded-full px-3 py-1.5 text-xs font-black text-ink/60 hover:bg-pink hover:text-ink dark:text-white/60"
                   >
                     刪除
@@ -368,6 +388,19 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
       >
         + 掃描新課表
       </button>
+
+      {pendingDeleteId && (
+        <ConfirmDialog
+          title="刪除這堂課?"
+          message={`確定要刪除「${courses.find((course) => course.id === pendingDeleteId)?.name ?? ""}」嗎?這個動作無法復原。`}
+          confirmLabel="刪除"
+          onConfirm={() => {
+            handleDelete(pendingDeleteId);
+            setPendingDeleteId(null);
+          }}
+          onCancel={() => setPendingDeleteId(null)}
+        />
+      )}
     </main>
   );
 }

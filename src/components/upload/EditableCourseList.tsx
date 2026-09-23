@@ -21,6 +21,7 @@ interface EditableCourseListProps {
 
 export function EditableCourseList({ result, onSaved }: EditableCourseListProps) {
   const [drafts, setDrafts] = useState<CourseDraft[]>(() => extractionToDrafts(result));
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const updateCourse = (
     localId: string,
@@ -119,9 +120,14 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
   const canSave = drafts.length > 0 && drafts.every((draft) => draftErrors.get(draft.localId) === null);
 
   const handleSave = () => {
-    const courses = draftsToCourses(drafts);
-    const { addedCount, skippedCount } = addCourses(courses);
-    onSaved({ added: addedCount, skipped: skippedCount });
+    try {
+      setSaveError(null);
+      const courses = draftsToCourses(drafts);
+      const { addedCount, skippedCount } = addCourses(courses);
+      onSaved({ added: addedCount, skipped: skippedCount });
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "儲存失敗");
+    }
   };
 
   if (drafts.length === 0) {
@@ -299,6 +305,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
       {!canSave && (
         <p className="text-sm font-bold text-pink-dark">有課程還沒填完整,請先修正上面標紅框的地方</p>
       )}
+      {saveError && <p className="text-sm font-bold text-pink-dark">{saveError}</p>}
 
       <button
         type="button"

@@ -1,5 +1,6 @@
 import { createEmptySchedule, scheduleSchema, type Holiday, type Schedule } from "../../schema/schedule";
 import type { Course, Recurrence } from "../../schema/course";
+import { writeJSON } from "./persist";
 
 const STORAGE_KEY = "class-schedule-scanner:schedule";
 
@@ -14,7 +15,14 @@ export function loadSchedule(): Schedule {
 }
 
 function persist(schedule: Schedule): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(schedule));
+  writeJSON(STORAGE_KEY, schedule);
+}
+
+/** Wholesale-replaces the schedule, e.g. when restoring a backup. Throws if `schedule` doesn't match the current shape. */
+export function replaceSchedule(schedule: Schedule): Schedule {
+  const validated = scheduleSchema.parse(schedule);
+  persist(validated);
+  return validated;
 }
 
 /**
