@@ -1,5 +1,6 @@
 import { appSettingsSchema, createDefaultSettings, type AppSettings } from "../../schema/settings";
 import { writeJSON } from "./persist";
+import { requestSync } from "../sync/syncTrigger";
 
 const STORAGE_KEY = "class-schedule-scanner:settings";
 
@@ -13,13 +14,18 @@ export function loadSettings(): AppSettings {
   }
 }
 
-export function saveSettings(settings: AppSettings): void {
+function persist(settings: AppSettings): void {
   writeJSON(STORAGE_KEY, settings);
 }
 
-/** Validates and persists settings from an external source (e.g. a restored backup). */
+export function saveSettings(settings: AppSettings): void {
+  persist(settings);
+  requestSync("settings");
+}
+
+/** Validates and persists settings from an external source (e.g. a restored backup). Does not itself request a sync — the caller (e.g. restoreBackup) decides. */
 export function replaceSettings(settings: AppSettings): AppSettings {
   const validated = appSettingsSchema.parse(settings);
-  saveSettings(validated);
+  persist(validated);
   return validated;
 }

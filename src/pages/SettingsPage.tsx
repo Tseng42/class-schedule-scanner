@@ -8,6 +8,8 @@ import { clearActiveApiKey, hasActiveStoredApiKey, setActiveApiKey } from "../se
 import { AccordionSection } from "../components/AccordionSection";
 import { HolidayEditor } from "../components/HolidayEditor";
 import { BackupRestore } from "../components/BackupRestore";
+import { CloudSyncSettings } from "../components/CloudSyncSettings";
+import { isSyncConfigured } from "../services/sync/firebaseConfig";
 import type { Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
 
@@ -274,6 +276,12 @@ export function SettingsPage() {
       <AccordionSection title="備份與還原" colorClass="bg-mint">
         <BackupRestore onRestored={handleRestored} />
       </AccordionSection>
+
+      {isSyncConfigured && (
+        <AccordionSection title="雲端同步" colorClass="bg-pink">
+          <CloudSyncSettings />
+        </AccordionSection>
+      )}
 
       <AccordionSection title="匯出到手機行事曆" colorClass="bg-sky">
         <p className="text-xs font-bold opacity-70">

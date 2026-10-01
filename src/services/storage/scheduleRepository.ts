@@ -2,6 +2,7 @@ import { createEmptySchedule, scheduleSchema, type Holiday, type Schedule } from
 import type { Course, Recurrence } from "../../schema/course";
 import { writeJSON } from "./persist";
 import { generateId } from "../../lib/id";
+import { requestSync } from "../sync/syncTrigger";
 
 const STORAGE_KEY = "class-schedule-scanner:schedule";
 
@@ -66,6 +67,7 @@ export function addCourses(newCourses: Course[]): AddCoursesResult {
   const toAdd = newCourses.filter((course) => !isDuplicate(current.courses, course));
   const updated: Schedule = { ...current, courses: [...current.courses, ...toAdd] };
   persist(updated);
+  requestSync("schedule");
   return { schedule: updated, addedCount: toAdd.length, skippedCount: newCourses.length - toAdd.length };
 }
 
@@ -73,6 +75,7 @@ export function removeCourse(courseId: string): Schedule {
   const current = loadSchedule();
   const updated: Schedule = { ...current, courses: current.courses.filter((course) => course.id !== courseId) };
   persist(updated);
+  requestSync("schedule");
   return updated;
 }
 
@@ -80,6 +83,7 @@ export function addHoliday(holiday: Holiday): Schedule {
   const current = loadSchedule();
   const updated: Schedule = { ...current, holidays: [...(current.holidays ?? []), holiday] };
   persist(updated);
+  requestSync("schedule");
   return updated;
 }
 
@@ -100,6 +104,7 @@ export function addHolidays(candidates: { name: string; startDate: string; endDa
   const newHolidays: Holiday[] = toAdd.map((candidate) => ({ id: generateId(), ...candidate }));
   const updated: Schedule = { ...current, holidays: [...existing, ...newHolidays] };
   persist(updated);
+  requestSync("schedule");
   return { schedule: updated, addedCount: newHolidays.length, skippedCount: candidates.length - newHolidays.length };
 }
 
@@ -110,6 +115,7 @@ export function removeHoliday(holidayId: string): Schedule {
     holidays: (current.holidays ?? []).filter((holiday) => holiday.id !== holidayId),
   };
   persist(updated);
+  requestSync("schedule");
   return updated;
 }
 
@@ -120,5 +126,6 @@ export function updateCourse(courseId: string, next: Course): Schedule {
     courses: current.courses.map((course) => (course.id === courseId ? next : course)),
   };
   persist(updated);
+  requestSync("schedule");
   return updated;
 }

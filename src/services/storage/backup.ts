@@ -3,6 +3,7 @@ import { scheduleSchema, type Schedule } from "../../schema/schedule";
 import { appSettingsSchema, type AppSettings } from "../../schema/settings";
 import { loadSchedule, replaceSchedule } from "./scheduleRepository";
 import { loadSettings, replaceSettings } from "./settingsRepository";
+import { requestSync } from "../sync/syncTrigger";
 
 const backupSchema = z.object({
   backupVersion: z.literal(1),
@@ -32,8 +33,11 @@ export class InvalidBackupError extends Error {
 export function restoreBackup(raw: unknown): { schedule: Schedule; settings: AppSettings } {
   const parsed = backupSchema.safeParse(raw);
   if (!parsed.success) throw new InvalidBackupError();
-  return {
+  const result = {
     schedule: replaceSchedule(parsed.data.schedule),
     settings: replaceSettings(parsed.data.settings),
   };
+  requestSync("schedule");
+  requestSync("settings");
+  return result;
 }
