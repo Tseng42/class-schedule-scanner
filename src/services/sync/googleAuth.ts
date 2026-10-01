@@ -13,9 +13,9 @@ import { auth } from "./firebaseConfig";
  * popup-based OAuth is unreliable/blocked in standalone mode. A top-level
  * redirect navigation works there.
  */
-export function signInWithGoogle(): void {
-  if (!auth) return;
-  void signInWithRedirect(auth, new GoogleAuthProvider());
+export function signInWithGoogle(): Promise<void> {
+  if (!auth) return Promise.resolve();
+  return signInWithRedirect(auth, new GoogleAuthProvider());
 }
 
 /** Signs out of the cloud account only — never touches local schedule/settings data. */

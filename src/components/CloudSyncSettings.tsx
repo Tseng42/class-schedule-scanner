@@ -21,9 +21,13 @@ export function CloudSyncSettings() {
 
   if (!isSyncConfigured) return null;
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     setError(null);
-    signInWithGoogle();
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "登入失敗");
+    }
   };
 
   const handleSignOut = async () => {
@@ -58,7 +62,7 @@ export function CloudSyncSettings() {
         </p>
         <button
           type="button"
-          onClick={handleSignIn}
+          onClick={() => void handleSignIn()}
           className="self-start rounded-full bg-ink px-5 py-2.5 text-sm font-black text-mint transition-transform active:scale-95"
         >
           使用 Google 帳號同步
