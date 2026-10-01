@@ -5,6 +5,7 @@ import {
   type Course,
   type CourseEvent,
   type EventKind,
+  type Note,
 } from "../schema/course";
 import { generateId } from "../lib/id";
 import { formatDateRange } from "../lib/formatDate";
@@ -47,6 +48,12 @@ function formatEventWhen(event: CourseEvent): string {
   return `${month}/${day}${event.time ? ` ${event.time}` : ""}`;
 }
 
+function formatNoteWhen(date: string | undefined): string | null {
+  if (!date) return null;
+  const [, month, day] = date.split("-").map(Number);
+  return `${month}/${day}`;
+}
+
 function formatRemind(minutes: number | undefined): string {
   if (!minutes) return "不提醒";
   return `${REMIND_OPTIONS.find((option) => option.value === minutes)?.label ?? `${minutes} 分鐘前`}提醒`;
@@ -67,10 +74,13 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
   const [eventRemind, setEventRemind] = useState(1440);
   const [eventError, setEventError] = useState<string | null>(null);
 
-  const [noteDraft, setNoteDraft] = useState("");
+  const [noteText, setNoteText] = useState("");
+  const [noteDate, setNoteDate] = useState("");
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const cancellations = course.cancellations ?? [];
   const events = course.events ?? [];
+  const notes = course.notes ?? [];
 
   const save = (patch: Partial<Course>) => {
     onChange({ ...course, ...patch, updatedAt: new Date().toISOString() });
@@ -81,7 +91,11 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
       setOpenForm(null);
       return;
     }
-    if (form === "note") setNoteDraft(course.notes ?? "");
+    if (form === "note") {
+      setNoteText("");
+      setNoteDate("");
+      setNoteError(null);
+    }
     setOpenForm(form);
   };
 
@@ -133,15 +147,49 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
     setOpenForm(null);
   };
 
-  const saveNote = () => {
-    save({ notes: noteDraft.trim() || undefined });
+  const addNote = () => {
+    const trimmed = noteText.trim();
+    if (!trimmed) {
+      setNoteError("請輸入備註內容");
+      return;
+    }
+    const next: Note = { id: generateId(), text: trimmed, date: noteDate || undefined };
+    const sorted = [...notes, next].sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+    save({ notes: sorted });
+    setNoteText("");
+    setNoteDate("");
+    setNoteError(null);
     setOpenForm(null);
   };
 
   return (
     <div className="mt-3 flex flex-col gap-2 border-t-2 border-ink/10 pt-3 dark:border-white/10">
-      {course.notes && openForm !== "note" && (
-        <p className="text-xs font-bold text-ink/70 dark:text-white/70">備註:{course.notes}</p>
+      {notes.length > 0 && (
+        <ul className="flex flex-col gap-1.5">
+          {notes.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between gap-2 rounded-2xl bg-mint py-1.5 pr-1.5 pl-3 text-xs font-black text-ink"
+            >
+              <span className="min-w-0">
+                {formatNoteWhen(item.date) && (
+                  <span className="mr-1.5 rounded-full bg-ink px-2 py-0.5 text-[10px] text-mint">
+                    {formatNoteWhen(item.date)}
+                  </span>
+                )}
+                {item.text}
+              </span>
+              <button
+                type="button"
+                aria-label="刪除這則備註"
+                onClick={() => save({ notes: notes.filter((other) => other.id !== item.id) })}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink/10 hover:bg-ink hover:text-mint"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
       {cancellations.length > 0 && (
@@ -201,7 +249,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
           + 考試/作業
         </button>
         <button type="button" onClick={() => toggleForm("note")} className={actionButtonClass(openForm === "note")}>
-          {course.notes ? "編輯備註" : "+ 備註"}
+          + 備註
         </button>
       </div>
 
@@ -348,18 +396,35 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
         <div className="flex flex-col gap-2 rounded-2xl border-2 border-ink/10 p-3 dark:border-white/10">
           <input
             type="text"
-            value={noteDraft}
-            onChange={(event) => setNoteDraft(event.target.value)}
+            value={noteText}
+            onChange={(event) => {
+              setNoteText(event.target.value);
+              setNoteError(null);
+            }}
             placeholder="例如 帶計算機、教室改到 B203"
             className={inputClass}
           />
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              value={noteDate}
+              onChange={(event) => setNoteDate(event.target.value)}
+              onClick={(event) => event.currentTarget.showPicker?.()}
+              aria-label="備註日期(選填)"
+              className={inputClass}
+            />
+            <span className="text-xs font-bold text-ink/40 dark:text-white/40">
+              (選填,不填就是一般提醒,不綁特定上課日)
+            </span>
+          </div>
+          {noteError && <p className="text-xs font-black text-pink-dark">{noteError}</p>}
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={saveNote}
+              onClick={addNote}
               className="rounded-full bg-lime px-4 py-2 text-sm font-black text-ink transition-transform active:scale-95"
             >
-              儲存備註
+              新增備註
             </button>
             <button
               type="button"

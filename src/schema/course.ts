@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { generateId } from "../lib/id";
 
 export const dayOfWeekSchema = z.enum(["MO", "TU", "WE", "TH", "FR", "SA", "SU"]);
 export type DayOfWeek = z.infer<typeof dayOfWeekSchema>;
@@ -69,6 +70,20 @@ export const courseEventSchema = z.object({
 });
 export type CourseEvent = z.infer<typeof courseEventSchema>;
 
+/** A freeform note, optionally tied to a specific class date ("10/15: 帶護照"). Undated notes are general reminders. */
+export const noteSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  date: z.string().optional(),
+});
+export type Note = z.infer<typeof noteSchema>;
+
+/** Older saved schedules have `notes` as a single string — migrated here into a one-item list. */
+const notesField = z.preprocess((value) => {
+  if (typeof value === "string") return value.trim() ? [{ id: generateId(), text: value }] : [];
+  return value;
+}, z.array(noteSchema).optional());
+
 export const courseSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -76,7 +91,7 @@ export const courseSchema = z.object({
   location: z.string().optional(),
   timeSlots: z.array(timeSlotSchema).min(1),
   recurrence: recurrenceSchema,
-  notes: z.string().optional(),
+  notes: notesField,
   cancellations: z.array(cancellationSchema).optional(),
   events: z.array(courseEventSchema).optional(),
   createdAt: z.string(),

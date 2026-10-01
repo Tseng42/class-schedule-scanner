@@ -5,8 +5,9 @@ import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
 import { WeeklyWorkloadChart } from "../components/WeeklyWorkloadChart";
-import { EVENT_KIND_LABELS } from "../schema/course";
+import { EVENT_KIND_LABELS, type Course } from "../schema/course";
 import { daysUntil, formatDaysUntil, getUpcomingEvents } from "../services/scheduling/events";
+import { toDateKey } from "../services/scheduling/dateKey";
 import {
   findCurrentOccurrence,
   formatDuration,
@@ -17,6 +18,14 @@ import {
 
 interface HomePageProps {
   onNavigateUpload: () => void;
+}
+
+/** Undated notes are general reminders (always shown); dated ones only surface on their matching class day. */
+function relevantNotes(course: Course, at: Date): string[] {
+  const dateKey = toDateKey(at);
+  return (course.notes ?? [])
+    .filter((note) => !note.date || note.date === dateKey)
+    .map((note) => note.text);
 }
 
 function isNotificationGranted(): boolean {
@@ -66,7 +75,11 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
             {current.timeSlot.startTime}–{current.timeSlot.endTime}
             {current.course.location ? ` · ${current.course.location}` : ""}
           </p>
-          {current.course.notes && <p className="mt-2 text-sm font-bold">備註:{current.course.notes}</p>}
+          {relevantNotes(current.course, current.startAt).map((text, index) => (
+            <p key={index} className="mt-2 text-sm font-bold">
+              備註:{text}
+            </p>
+          ))}
           <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-lime">
             還有 {formatDuration(current.endAt.getTime() - now.getTime())}下課
           </p>
@@ -78,7 +91,11 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
           </p>
           <p className="mt-1 text-2xl font-black">{next.course.name}</p>
           {next.course.location && <p className="mt-1 text-sm font-bold">{next.course.location}</p>}
-          {next.course.notes && <p className="mt-2 text-sm font-bold">備註:{next.course.notes}</p>}
+          {relevantNotes(next.course, next.startAt).map((text, index) => (
+            <p key={index} className="mt-2 text-sm font-bold">
+              備註:{text}
+            </p>
+          ))}
           <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-pink">
             還有 {formatDuration(next.startAt.getTime() - now.getTime())}
           </p>
