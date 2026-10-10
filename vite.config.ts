@@ -13,7 +13,10 @@ export default defineConfig({
       workbox: {
         // Never cache the AI API calls — they're POST requests anyway (never
         // cached by the Cache API) and reminder timing depends on fresh data.
-        navigateFallbackDenylist: [/^\/api\//],
+        // /__/auth/* is Firebase's sign-in helper, proxied by vercel.json: the
+        // redirect flow navigates to it, and answering that navigation with the
+        // cached app shell would break sign-in.
+        navigateFallbackDenylist: [/^\/api\//, /^\/__\//],
       },
       manifest: {
         name: '課表掃描與上課提醒',

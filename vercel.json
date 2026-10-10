@@ -6,6 +6,12 @@
       "schedule": "0 23 * * *"
     }
   ],
+  "rewrites": [
+    {
+      "source": "/__/auth/:path*",
+      "destination": "https://class-schedule-7789c.firebaseapp.com/__/auth/:path*"
+    }
+  ],
   "functions": {
     "api/*.js": {
       "maxDuration": 30

@@ -38,6 +38,10 @@ npm run dev
    ```
    這四個值**不是機密**——Firebase 的用戶端設定本來就設計成會進前端程式碼、任何人看得到也沒關係,真正的存取控制是第 4 步設定的 Firestore 規則(只有登入者本人能讀寫自己的資料)。跟上面的 `VITE_ANTHROPIC_API_KEY` 不一樣,這四個可以直接設成 Vercel 的環境變數,不用擔心洩漏風險。
 6. **Authentication → Settings → Authorized domains**,把正式網域(例如 `class-schedule-scanner.vercel.app`)加進去——忘記這步,正式環境登入會出現 `auth/unauthorized-domain` 錯誤。
+7. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) 選同一個專案 → 憑證 → OAuth 2.0 用戶端 ID 裡的「Web client (auto created by Google Service)」→ 在「已授權的重新導向 URI」新增 `https://你的正式網域/__/auth/handler` 並儲存。
+8. 把 `vercel.json` 裡 `rewrites` 的目的地改成你自己的 `https://<專案 ID>.firebaseapp.com/__/auth/:path*`。
+
+第 7、8 步的原因:現在的瀏覽器(Chrome 115+、Firefox 109+、Safari 16.1+)會擋跨網域儲存,Firebase 預設放在 `<專案>.firebaseapp.com` 的登入輔助頁面因此傳不回登入結果,表現出來就是「選完 Google 帳號回到網站還是未登入」。解法是讓這些頁面從網站自己的網域提供:`vercel.json` 把 `/__/auth/*` 轉接到 Firebase,正式環境的 `authDomain` 則直接用網站自己的網域(見 `src/services/sync/firebaseConfig.ts`)。詳見 [Firebase 官方說明](https://firebase.google.com/docs/auth/web/redirect-best-practices)。本機開發伺服器沒有這層轉接,所以本機無法測試登入。
 
 設定好之後,設定頁會多出「雲端同步」區塊,用 Google 帳號登入即可,登入一次會一直保持登入狀態。
 
