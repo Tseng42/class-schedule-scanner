@@ -24,13 +24,10 @@ export interface SyncResult {
   holidayAddedCount?: number;
 }
 
-/** Cloud's semester dates win when both sides define a value; an undefined side falls back to the other. */
+/** Cloud wins wherever it defines a value; a field it leaves undefined keeps the local value. */
 function mergeSettings(local: AppSettings, cloud: AppSettings): AppSettings {
-  return {
-    reminderMinutes: cloud.reminderMinutes,
-    semesterStartDate: cloud.semesterStartDate ?? local.semesterStartDate,
-    semesterEndDate: cloud.semesterEndDate ?? local.semesterEndDate,
-  };
+  const definedInCloud = Object.fromEntries(Object.entries(cloud).filter(([, value]) => value !== undefined));
+  return { ...local, ...definedInCloud };
 }
 
 async function readCloudDoc(uid: string): Promise<CloudDoc | null> {

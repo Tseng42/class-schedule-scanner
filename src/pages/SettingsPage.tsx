@@ -9,6 +9,7 @@ import { AccordionSection } from "../components/AccordionSection";
 import { HolidayEditor } from "../components/HolidayEditor";
 import { BackupRestore } from "../components/BackupRestore";
 import { CloudSyncSettings } from "../components/CloudSyncSettings";
+import { LineReminderSettings } from "../components/LineReminderSettings";
 import { isSyncConfigured } from "../services/sync/firebaseConfig";
 import type { Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
@@ -100,6 +101,14 @@ export function SettingsPage() {
     setSettings(saved);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2000);
+  };
+
+  const handleLineSettingsChange = (next: AppSettings) => {
+    const saved = withStorageErrorHandling(() => {
+      saveSettings(next);
+      return next;
+    });
+    if (saved) setSettings(saved);
   };
 
   const handleRestored = (restoredSchedule: Schedule, restoredSettings: AppSettings) => {
@@ -280,6 +289,16 @@ export function SettingsPage() {
       {isSyncConfigured && (
         <AccordionSection title="雲端同步" colorClass="bg-pink">
           <CloudSyncSettings />
+        </AccordionSection>
+      )}
+
+      {isSyncConfigured && (
+        <AccordionSection
+          title="LINE 提醒"
+          colorClass="bg-mint"
+          subtitle={settings.lineDailySummary || settings.lineClassReminder ? "已開啟" : undefined}
+        >
+          <LineReminderSettings settings={settings} onChange={handleLineSettingsChange} />
         </AccordionSection>
       )}
 

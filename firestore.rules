@@ -7,5 +7,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    // lineState/{uid} (which LINE reminders were already sent) is written only by the
+    // server through the Admin SDK, which bypasses these rules. No client rule on purpose:
+    // anything not matched above is denied.
   }
 }

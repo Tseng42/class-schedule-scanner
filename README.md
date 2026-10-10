@@ -41,6 +41,39 @@ npm run dev
 
 設定好之後,設定頁會多出「雲端同步」區塊,用 Google 帳號登入即可,登入一次會一直保持登入狀態。
 
+## LINE 提醒設定(選用)
+
+用 LINE 官方帳號把提醒傳到你的 LINE:每天早上一則今日課表,以及每堂課前的提醒。需要先完成上面的雲端同步(伺服器是讀雲端上的課表來發送的)。
+
+**運作方式**:`api/line-notify.js` 是一支 Vercel 函式,每次被呼叫就檢查「現在有沒有該送的訊息」。Vercel 免費方案的排程一天只能跑一次(`vercel.json`,台灣時間早上 7 點多),所以另外用 GitHub Actions(`.github/workflows/line-notify.yml`)每 10 分鐘呼叫一次。GitHub 的排程在尖峰會延遲、偶爾會漏,所以課前提醒可能早到或晚到幾分鐘。
+
+**費用**:LINE 官方帳號輕用量方案每月 200 則免費,每天摘要約 30 則,課前提醒每堂一則。
+
+1. 到 [LINE Official Account Manager](https://manager.line.biz/) 建立一個官方帳號,在「設定 → Messaging API」啟用 Messaging API。
+2. 到 [LINE Developers Console](https://developers.line.biz/console/) 打開對應的 channel:
+   - **Messaging API** 分頁最下面,發行 **Channel access token (long-lived)**。
+   - **Basic settings** 分頁最下面,複製 **Your user ID**(`U` 開頭)。
+3. 用手機 LINE 掃 Messaging API 分頁上的 QR code,**把這個官方帳號加為好友**(沒加好友收不到訊息)。
+4. Firebase 主控台 → 專案設定 → **服務帳戶** → 產生新的私密金鑰,會下載一個 JSON 檔。這個檔案等同整個資料庫的管理員權限,不要 commit、不要傳給別人。
+5. 產生一組隨機字串當 `CRON_SECRET`(例如在終端機跑 `openssl rand -hex 32`)。
+6. 在 Vercel 專案的 Environment Variables 新增下面五個,**類型都選 Secret**,而且**不能**加 `VITE_` 開頭(加了會被打包進公開的前端程式碼):
+
+   | 名稱 | 值 |
+   |---|---|
+   | `CRON_SECRET` | 第 5 步的隨機字串 |
+   | `LINE_CHANNEL_ACCESS_TOKEN` | 第 2 步的 token |
+   | `LINE_USER_ID` | 第 2 步的 user ID |
+   | `LINE_OWNER_EMAIL` | 你登入雲端同步用的 Google 帳號 |
+   | `FIREBASE_SERVICE_ACCOUNT` | 第 4 步那個 JSON 檔的完整內容 |
+
+   存好後 Redeploy 一次。
+7. GitHub repo → Settings → Secrets and variables → Actions → New repository secret,新增 `CRON_SECRET`,值跟 Vercel 上的一樣。
+8. 回到網站的設定頁 →「LINE 提醒」→ 按「發送測試訊息」,LINE 有收到就代表接好了,再勾選想要的提醒。
+
+`LINE_OWNER_EMAIL` 的用途:網站是公開的,任何人都能用 Google 登入並有自己的雲端資料,伺服器只會讀這個帳號的課表、只會發給 `LINE_USER_ID`。
+
+GitHub 會在 repo 連續 60 天沒有任何活動時自動停用排程,屆時到 repo 的 Actions 頁面重新啟用即可。
+
 ## 技術棧
 
 React + Vite + TypeScript + Tailwind CSS,支援 PWA(可安裝到手機主畫面)。

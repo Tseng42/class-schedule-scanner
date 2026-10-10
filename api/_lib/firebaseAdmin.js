@@ -1,0 +1,78 @@
+// @ts-check
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+
+/** @type {import("firebase-admin/firestore").Firestore | null} */
+let firestore = null;
+/** @type {{ email: string, uid: string } | null} */
+let cachedOwner = null;
+
+/**
+ * Accepts the service-account JSON either pasted as-is or base64-encoded.
+ * @param {string} raw
+ */
+function parseServiceAccount(raw) {
+  const trimmed = raw.trim();
+  const text = trimmed.startsWith("{") ? trimmed : Buffer.from(trimmed, "base64").toString("utf8");
+  const parsed = JSON.parse(text);
+  // Some env editors store the key's newlines as the two characters "\n".
+  if (typeof parsed.private_key === "string") parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+  return parsed;
+}
+
+function getAdminApp() {
+  const [existing] = getApps();
+  if (existing) return existing;
+  return initializeApp({ credential: cert(parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT ?? "")) });
+}
+
+export function getDb() {
+  if (!firestore) {
+    firestore = getFirestore(getAdminApp());
+    // REST transport avoids loading gRPC on every cold start.
+    firestore.settings({ preferRest: true });
+  }
+  return firestore;
+}
+
+/**
+ * The Firebase uid of the one account allowed to receive LINE reminders, or
+ * null if that Google account has never signed in to the app.
+ *
+ * The site is public, so anyone can sign in and get their own `users/{uid}`
+ * document — reminders must only ever read the owner's.
+ * @returns {Promise<string | null>}
+ */
+export async function getOwnerUid() {
+  const email = (process.env.LINE_OWNER_EMAIL ?? "").trim().toLowerCase();
+  if (cachedOwner?.email === email) return cachedOwner.uid;
+  try {
+    const user = await getAuth(getAdminApp()).getUserByEmail(email);
+    cachedOwner = { email, uid: user.uid };
+    return user.uid;
+  } catch (error) {
+    if (/** @type {{ code?: string }} */ (error).code === "auth/user-not-found") return null;
+    throw error;
+  }
+}
+
+/**
+ * Verifies a Firebase ID token and confirms it belongs to the owner account.
+ * @param {string} idToken
+ * @returns {Promise<"owner" | "not-owner" | "invalid">}
+ */
+export async function checkOwnerToken(idToken) {
+  // Outside the try: a malformed service account is a server misconfiguration,
+  // and must not be reported to the user as "your sign-in expired".
+  const auth = getAuth(getAdminApp());
+  let decoded;
+  try {
+    decoded = await auth.verifyIdToken(idToken);
+  } catch {
+    return "invalid";
+  }
+  const ownerEmail = (process.env.LINE_OWNER_EMAIL ?? "").trim().toLowerCase();
+  const isOwner = decoded.email_verified === true && decoded.email?.toLowerCase() === ownerEmail;
+  return isOwner ? "owner" : "not-owner";
+}
