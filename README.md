@@ -49,7 +49,9 @@ npm run dev
 
 用 LINE 官方帳號把提醒傳到你的 LINE:每天早上一則今日課表,以及每堂課前的提醒。需要先完成上面的雲端同步(伺服器是讀雲端上的課表來發送的)。
 
-**運作方式**:`api/line-notify.js` 是一支 Vercel 函式,每次被呼叫就檢查「現在有沒有該送的訊息」。Vercel 免費方案的排程一天只能跑一次(`vercel.json`,台灣時間早上 7 點多),所以另外用 GitHub Actions(`.github/workflows/line-notify.yml`)每 10 分鐘呼叫一次。GitHub 的排程在尖峰會延遲、偶爾會漏,所以課前提醒可能早到或晚到幾分鐘。
+**運作方式**:`api/line-notify.js` 是一支 Vercel 函式,每次被呼叫就檢查「現在有沒有該送的訊息」。Vercel 免費方案的排程一天只能跑一次(`vercel.json`,台灣時間早上 7 點多),只夠送每天早上的課表,所以另外用免費的排程服務 [cron-job.org](https://cron-job.org) 每 5 分鐘呼叫一次。課前提醒會在「設定的提前時間」到「再早 5 分鐘」之間送達。
+
+沒有用 GitHub Actions 的排程:實測設定每 10 分鐘一次,24 小時只跑了 5 次(間隔 3 到 7 小時),做不了課前提醒。
 
 **費用**:LINE 官方帳號輕用量方案每月 200 則免費,每天摘要約 30 則,課前提醒每堂一則。
 
@@ -71,12 +73,21 @@ npm run dev
    | `FIREBASE_SERVICE_ACCOUNT` | 第 4 步那個 JSON 檔的完整內容 |
 
    存好後 Redeploy 一次。
-7. GitHub repo → Settings → Secrets and variables → Actions → New repository secret,新增 `CRON_SECRET`,值跟 Vercel 上的一樣。
+7. 到 [cron-job.org](https://cron-job.org) 註冊帳號,建立一個 cronjob:
+   - **URL**:`https://你的正式網域/api/line-notify`
+   - **執行頻率**:每 5 分鐘(Every 5 minutes)
+   - **進階設定的 Headers**:新增一筆,Key 填 `Authorization`,Value 填 `Bearer ` 加上第 5 步的 `CRON_SECRET`(`Bearer` 後面有一個空白)
+   - 建議開啟「執行失敗」和「排程被停用」的 email 通知
+   - 用它的測試執行功能跑一次,回應是 HTTP 200 就代表接好了
 8. 回到網站的設定頁 →「LINE 提醒」→ 按「發送測試訊息」,LINE 有收到就代表接好了,再勾選想要的提醒。
 
 `LINE_OWNER_EMAIL` 的用途:網站是公開的,任何人都能用 Google 登入並有自己的雲端資料,伺服器只會讀這個帳號的課表、只會發給 `LINE_USER_ID`。
 
-GitHub 會在 repo 連續 60 天沒有任何活動時自動停用排程,屆時到 repo 的 Actions 頁面重新啟用即可。
+注意事項:
+
+- cron-job.org 在同一個排程連續失敗超過 25 次時會自動停用它(見它的 [FAQ](https://cron-job.org/en/faq/))。`CRON_SECRET` 兩邊填得不一樣就會一直失敗,收到停用通知時先檢查這個。
+- 如果把呼叫頻率改成別的間隔,`api/_lib/schedule.js` 的 `TICK_SLACK_MINUTES` 要改成一樣的分鐘數。
+- 每 5 分鐘呼叫一次,一個月大約 8,600 次。Vercel 免費方案每月有 4 小時的函式 CPU 額度,超過會停用 30 天,上線幾天後到 Vercel 的 Usage 頁面確認用量。
 
 ## 技術棧
 

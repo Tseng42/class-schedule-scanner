@@ -16,15 +16,20 @@ function formatTaipei(epochMs) {
 }
 
 /**
- * Sends whatever LINE reminders are due right now. Called every ~10 minutes by
- * .github/workflows/line-notify.yml and once a day by Vercel Cron (vercel.json).
+ * Sends whatever LINE reminders are due right now. Called every ~5 minutes by
+ * an external scheduler (cron-job.org, see README) and once a day by Vercel
+ * Cron (vercel.json), which keeps the morning summary going if the external
+ * scheduler stops.
  *
  * Safe to call at any frequency and concurrently: each message is claimed in a
  * Firestore transaction before it is pushed, so overlapping or duplicated
  * scheduler calls cannot double-send.
  *
- * The response carries statuses only, never schedule contents — the GitHub
- * Actions log that prints it is public.
+ * The response carries statuses only, never schedule contents — the external
+ * scheduler keeps response bodies in its execution history.
+ *
+ * Expected states answer 200 even when nothing can be sent: cron-job.org
+ * disables a job after 25 consecutive failed calls.
  *
  * @param {import("./_lib/env.js").ApiRequest} request
  * @param {import("./_lib/env.js").ApiResponse} response
@@ -66,7 +71,7 @@ export default async function handler(request, response) {
     const errors = [];
 
     // A failed push gives its claim back so the next call retries — except when
-    // the quota is gone, where retrying every 10 minutes all month is pointless.
+    // the quota is gone, where retrying on every tick all month is pointless.
     if (plan.dailyText) {
       const result = await pushText(plan.dailyText);
       if (result.ok) {

@@ -60,11 +60,12 @@ const EVENT_KIND_LABELS = { exam: "考試", assignment: "作業", other: "其他
 export const DEFAULT_DAILY_TIME = "07:00";
 export const DEFAULT_REMINDER_MINUTES = 10;
 /**
- * The scheduler only calls in every ~10 minutes, so a reminder becomes due this
+ * The scheduler only calls in every ~5 minutes, so a reminder becomes due this
  * much earlier than the configured lead time. Without it, a tick landing just
- * before the window would be followed by one landing after the class started.
+ * before the lead time would be followed by one landing well inside it. Keep
+ * this equal to the external scheduler's interval (see README).
  */
-export const TICK_SLACK_MINUTES = 10;
+export const TICK_SLACK_MINUTES = 5;
 const UPCOMING_EVENT_DAYS = 7;
 const LINE_TEXT_LIMIT = 4800;
 

@@ -62,7 +62,7 @@ export function LineReminderSettings({ settings, onChange }: LineReminderSetting
             }}
             className="rounded-xl border-2 border-ink/20 bg-white px-3 py-1.5 font-bold text-ink focus:border-ink focus:outline-none"
           />
-          <span className="text-xs opacity-60">到點後約 10 分鐘內送達</span>
+          <span className="text-xs opacity-60">到點後約 5 分鐘內送達</span>
         </label>
       )}
 
@@ -80,7 +80,7 @@ export function LineReminderSettings({ settings, onChange }: LineReminderSetting
       </label>
 
       <p className="text-xs font-bold opacity-70">
-        課前提醒靠免費排程每 10 分鐘檢查一次,所以可能提早或延後幾分鐘,偶爾會漏掉。重要的課建議另外匯出到手機行事曆。
+        課前提醒靠免費的排程服務每 5 分鐘檢查一次,所以會比設定的時間早到最多 5 分鐘左右。排程服務出狀況時可能漏掉,重要的課建議另外匯出到手機行事曆。
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
