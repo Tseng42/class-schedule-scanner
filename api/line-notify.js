@@ -1,7 +1,7 @@
 // @ts-check
 import { FieldValue } from "firebase-admin/firestore";
 import { bearerToken, missingEnv, safeEqual } from "./_lib/env.js";
-import { getDb, getOwnerUid } from "./_lib/firebaseAdmin.js";
+import { describeError, getDb, getOwnerUid } from "./_lib/firebaseAdmin.js";
 import { pushText } from "./_lib/line.js";
 import { planTick, taipeiParts } from "./_lib/schedule.js";
 
@@ -43,10 +43,13 @@ export default async function handler(request, response) {
   const missing = missingEnv(REQUIRED_ENV);
   if (missing.length > 0) return response.status(200).json({ ok: false, reason: "not-configured", missing });
 
+  // Which step threw, for the 500 below.
+  let stage = "owner-lookup";
   try {
     const uid = await getOwnerUid();
     if (!uid) return response.status(200).json({ ok: false, reason: "owner-never-signed-in" });
 
+    stage = "read-schedule";
     const db = getDb();
     const userRef = db.collection("users").doc(uid);
     const stateRef = db.collection("lineState").doc(uid);
@@ -63,6 +66,7 @@ export default async function handler(request, response) {
     });
     if (!claimed) return response.status(200).json({ ok: false, reason: "no-synced-schedule" });
 
+    stage = "push";
     const { plan, previousDailySentDate } = claimed;
     /** @type {string} */
     let daily = plan.dailyStatus;
@@ -100,6 +104,6 @@ export default async function handler(request, response) {
     return response.status(200).json({ ok: errors.length === 0, at: formatTaipei(nowMs), daily, reminders, errors });
   } catch (error) {
     console.error("line-notify failed", error);
-    return response.status(500).json({ ok: false, reason: "error" });
+    return response.status(500).json({ ok: false, reason: "error", stage, ...describeError(error) });
   }
 }

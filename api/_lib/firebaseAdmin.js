@@ -21,6 +21,50 @@ function parseServiceAccount(raw) {
   return parsed;
 }
 
+/**
+ * Why FIREBASE_SERVICE_ACCOUNT cannot be used, as a short code, or null when
+ * its shape looks right. Safe to return to a caller: it never contains any
+ * part of the value (JSON.parse error messages can quote their input, so those
+ * are deliberately not passed on).
+ * @returns {string | null}
+ */
+export function serviceAccountProblem() {
+  const raw = (process.env.FIREBASE_SERVICE_ACCOUNT ?? "").trim();
+  if (!raw) return "empty";
+  let parsed;
+  try {
+    parsed = parseServiceAccount(raw);
+  } catch {
+    return "not-json";
+  }
+  if (!parsed || typeof parsed !== "object") return "not-json";
+  if (parsed.type !== "service_account") return "not-a-service-account-key";
+  for (const field of ["project_id", "client_email", "private_key"]) {
+    if (typeof parsed[field] !== "string" || !parsed[field]) return `missing-${field}`;
+  }
+  if (!parsed.private_key.includes("PRIVATE KEY")) return "bad-private-key";
+  return null;
+}
+
+/**
+ * What a caught server error can safely tell the caller: the Firebase/Google
+ * error code (never the message) and, if the service account is the likely
+ * cause, which check it fails.
+ * @param {unknown} error
+ * @returns {{ code: string, serviceAccount?: string }}
+ */
+export function describeError(error) {
+  const raw = /** @type {{ code?: unknown, name?: unknown }} */ (error ?? {});
+  const code =
+    typeof raw.code === "string" || typeof raw.code === "number"
+      ? String(raw.code)
+      : typeof raw.name === "string"
+        ? raw.name
+        : "unknown";
+  const serviceAccount = serviceAccountProblem();
+  return serviceAccount ? { code, serviceAccount } : { code };
+}
+
 function getAdminApp() {
   const [existing] = getApps();
   if (existing) return existing;

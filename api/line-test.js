@@ -1,9 +1,19 @@
 // @ts-check
 import { bearerToken, missingEnv } from "./_lib/env.js";
-import { checkOwnerToken } from "./_lib/firebaseAdmin.js";
+import { checkOwnerToken, describeError } from "./_lib/firebaseAdmin.js";
 import { pushText } from "./_lib/line.js";
 
 const REQUIRED_ENV = ["FIREBASE_SERVICE_ACCOUNT", "LINE_OWNER_EMAIL", "LINE_CHANNEL_ACCESS_TOKEN", "LINE_USER_ID"];
+/** @type {Record<string, string>} */
+const SERVICE_ACCOUNT_HINTS = {
+  empty: "是空的",
+  "not-json": "不是完整的 JSON,要把金鑰檔從 { 到 } 整段貼上",
+  "not-a-service-account-key": "貼的不是服務帳戶金鑰,要用 Firebase「產生新的私密金鑰」下載的那個檔案",
+  "missing-project_id": "少了 project_id,請整段重新貼上",
+  "missing-client_email": "少了 client_email,請整段重新貼上",
+  "missing-private_key": "少了 private_key,請整段重新貼上",
+  "bad-private-key": "private_key 的格式不對,請整段重新貼上",
+};
 
 /**
  * The "發送測試訊息" button in Settings. Authenticated with the caller's
@@ -51,6 +61,10 @@ export default async function handler(request, response) {
     return response.status(200).json({ ok: true, message: "已送出,去 LINE 看看有沒有收到" });
   } catch (error) {
     console.error("line-test failed", error);
-    return response.status(500).json({ ok: false, message: "伺服器發生錯誤,可能是 FIREBASE_SERVICE_ACCOUNT 的內容不正確" });
+    const { code, serviceAccount } = describeError(error);
+    const message = serviceAccount
+      ? `Vercel 上的 FIREBASE_SERVICE_ACCOUNT 內容不正確(${SERVICE_ACCOUNT_HINTS[serviceAccount] ?? serviceAccount})`
+      : `伺服器發生錯誤(${code})`;
+    return response.status(500).json({ ok: false, message });
   }
 }
