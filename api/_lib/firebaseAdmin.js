@@ -47,11 +47,50 @@ export function serviceAccountProblem() {
 }
 
 /**
+ * Shape facts about a FIREBASE_SERVICE_ACCOUNT value that does not parse, to
+ * tell a truncated paste from a mangled one. Counts and yes/no answers only —
+ * nothing here can reveal any part of the value. A downloaded key file is about
+ * 2400 characters on 13 lines.
+ */
+function serviceAccountShape() {
+  const raw = (process.env.FIREBASE_SERVICE_ACCOUNT ?? "").trim();
+  const text = raw.startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8");
+  let parseError = "none";
+  let position = -1;
+  try {
+    JSON.parse(text);
+  } catch (error) {
+    // Classified from the message, which itself is never returned: it can quote the input.
+    const message = error instanceof Error ? error.message : "";
+    parseError = /control character/i.test(message)
+      ? "control-character-in-string"
+      : /Unexpected end|Unterminated/i.test(message)
+        ? "truncated"
+        : /Expected property name/i.test(message)
+          ? "bad-property-name"
+          : "other";
+    position = Number(/position (\d+)/.exec(message)?.[1] ?? -1);
+  }
+  return {
+    length: raw.length,
+    lines: raw.split("\n").length,
+    startsWithBrace: raw.startsWith("{"),
+    endsWithBrace: raw.endsWith("}"),
+    startsWithQuote: /^["'`]/.test(raw),
+    hasPrivateKeyField: raw.includes("private_key"),
+    hasKeyMarker: raw.includes("PRIVATE KEY"),
+    hasEscapedQuotes: raw.includes('\\"'),
+    parseError,
+    position,
+  };
+}
+
+/**
  * What a caught server error can safely tell the caller: the Firebase/Google
  * error code (never the message) and, if the service account is the likely
  * cause, which check it fails.
  * @param {unknown} error
- * @returns {{ code: string, serviceAccount?: string }}
+ * @returns {{ code: string, serviceAccount?: string, shape?: ReturnType<typeof serviceAccountShape> }}
  */
 export function describeError(error) {
   const raw = /** @type {{ code?: unknown, name?: unknown }} */ (error ?? {});
@@ -62,7 +101,8 @@ export function describeError(error) {
         ? raw.name
         : "unknown";
   const serviceAccount = serviceAccountProblem();
-  return serviceAccount ? { code, serviceAccount } : { code };
+  if (!serviceAccount) return { code };
+  return serviceAccount === "not-json" ? { code, serviceAccount, shape: serviceAccountShape() } : { code, serviceAccount };
 }
 
 function getAdminApp() {
