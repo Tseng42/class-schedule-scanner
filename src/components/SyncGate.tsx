@@ -11,12 +11,13 @@ function timeoutFallback(ms: number): Promise<SyncResult> {
 }
 
 function noticeFor(result: SyncResult): string | null {
-  const { scheduleAddedCount = 0, holidayAddedCount = 0 } = result;
-  if (scheduleAddedCount === 0 && holidayAddedCount === 0) return null;
+  const { scheduleAddedCount = 0, scheduleRemovedCount = 0, holidayAddedCount = 0, holidayRemovedCount = 0 } = result;
   const parts: string[] = [];
-  if (scheduleAddedCount > 0) parts.push(`${scheduleAddedCount} 堂課`);
-  if (holidayAddedCount > 0) parts.push(`${holidayAddedCount} 個放假日`);
-  return `已從雲端合併 ${parts.join("、")}`;
+  if (scheduleAddedCount > 0) parts.push(`新增 ${scheduleAddedCount} 堂課`);
+  if (scheduleRemovedCount > 0) parts.push(`移除 ${scheduleRemovedCount} 堂課`);
+  if (holidayAddedCount > 0) parts.push(`新增 ${holidayAddedCount} 個放假日`);
+  if (holidayRemovedCount > 0) parts.push(`移除 ${holidayRemovedCount} 個放假日`);
+  return parts.length > 0 ? `已從雲端同步:${parts.join("、")}` : null;
 }
 
 interface SyncGateProps {
@@ -29,7 +30,7 @@ interface SyncGateProps {
  * `useState(() => loadSchedule())` read already sees post-sync data, without
  * retrofitting any page with reactive listeners. A stalled/offline check
  * always falls through to rendering with whatever is in localStorage already;
- * sync is strictly additive and must never hard-block the app.
+ * sync must never hard-block the app.
  */
 export function SyncGate({ children }: SyncGateProps) {
   const [ready, setReady] = useState(!isSyncConfigured);

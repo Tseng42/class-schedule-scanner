@@ -3,8 +3,9 @@ const STORAGE_KEY = "class-schedule-scanner:syncMeta";
 interface SyncMeta {
   /** Set only by a completed syncNow() call — doubles as the "last synced at" value shown in Settings. */
   lastReconcileAt?: string;
-  lastKnownCloudScheduleUpdatedAt?: string;
   lastKnownCloudSettingsUpdatedAt?: string;
+  /** The schedule merge rules this device last synced with; a different value triggers a one-time reconciliation. */
+  scheduleMergeVersion?: number;
 }
 
 function readMeta(): SyncMeta {
