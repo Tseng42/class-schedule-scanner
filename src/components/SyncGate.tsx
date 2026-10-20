@@ -88,7 +88,7 @@ export function SyncGate({ children }: SyncGateProps) {
     <>
       {children}
       {notice && (
-        <div className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-full bg-ink px-5 py-2.5 text-center text-sm font-black text-mint shadow-lg dark:bg-mint dark:text-ink">
+        <div className="fixed inset-x-4 bottom-[5.5rem] z-50 mx-auto max-w-2xl rounded-full bg-ink px-5 py-2.5 text-center text-sm font-black text-mint shadow-lg dark:bg-mint dark:text-ink">
           {notice}
         </div>
       )}

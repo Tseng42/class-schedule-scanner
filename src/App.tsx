@@ -17,8 +17,8 @@ const TABS: { view: View; label: string }[] = [
 ];
 
 const DRAG_THRESHOLD = 8;
-const ACTIVE_TOKENS = ["text-lime", "dark:text-ink"];
-const INACTIVE_TOKENS = ["text-ink/50", "hover:text-ink", "dark:text-white/50", "dark:hover:text-white"];
+const ACTIVE_TOKENS = ["text-ink", "dark:text-white"];
+const INACTIVE_TOKENS = ["text-ink/60", "hover:text-ink", "dark:text-white/60", "dark:hover:text-white"];
 
 interface DragState {
   pointerId: number;
@@ -189,7 +189,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-cream dark:bg-ink">
-      <nav className="mx-auto flex max-w-2xl flex-wrap gap-1 px-4 pt-5">
+      <div
+        ref={contentRef}
+        key={view}
+        className={`pb-24 ${direction ? `page-enter-${direction}` : ""}`}
+      >
+        {view === "home" && <HomePage onNavigateUpload={() => navigateTo("upload")} />}
+        {view === "manage" && <ManageCoursesPage onNavigateUpload={() => navigateTo("upload")} />}
+        {view === "upload" && <UploadPage onNavigateHome={() => navigateTo("home")} />}
+        {view === "settings" && <SettingsPage />}
+      </div>
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div
           ref={navRef}
           data-swipe-ignore
@@ -197,11 +207,11 @@ function App() {
           onPointerMove={handlePointerMove}
           onPointerUp={(event) => endDrag(event, true)}
           onPointerCancel={(event) => endDrag(event, false)}
-          className="relative flex touch-none flex-wrap gap-1 rounded-full border-2 border-ink bg-white p-1 dark:border-white/20 dark:bg-white/5"
+          className="liquid-glass pointer-events-auto relative flex touch-none flex-wrap justify-center gap-1 rounded-full p-1"
         >
           <div
             ref={indicatorRef}
-            className="absolute inset-y-1 left-0 w-0 rounded-full bg-ink transition-[transform,width] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:bg-lime"
+            className="liquid-glass-pill absolute inset-y-1 left-0 w-0 rounded-full transition-[transform,width] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
           />
           {TABS.map((tab) => (
             <button
@@ -211,10 +221,10 @@ function App() {
               }}
               type="button"
               onClick={() => navigateTo(tab.view)}
-              className={`relative z-10 rounded-full px-4 py-2 text-sm font-black transition-colors duration-300 ${
+              className={`relative z-10 rounded-full px-4 py-2.5 text-sm font-black transition-colors duration-300 ${
                 view === tab.view
-                  ? "text-lime dark:text-ink"
-                  : "text-ink/50 hover:text-ink dark:text-white/50 dark:hover:text-white"
+                  ? "text-ink dark:text-white"
+                  : "text-ink/60 hover:text-ink dark:text-white/60 dark:hover:text-white"
               }`}
             >
               {tab.label}
@@ -222,14 +232,8 @@ function App() {
           ))}
         </div>
       </nav>
-      <div ref={contentRef} key={view} className={direction ? `page-enter-${direction}` : undefined}>
-        {view === "home" && <HomePage onNavigateUpload={() => navigateTo("upload")} />}
-        {view === "manage" && <ManageCoursesPage onNavigateUpload={() => navigateTo("upload")} />}
-        {view === "upload" && <UploadPage onNavigateHome={() => navigateTo("home")} />}
-        {view === "settings" && <SettingsPage />}
-      </div>
       {updateReady && (
-        <div className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-full bg-ink py-2 pr-2 pl-5 text-sm font-black text-lime shadow-lg dark:bg-lime dark:text-ink">
+        <div className="fixed inset-x-4 bottom-[5.5rem] z-50 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-full bg-ink py-2 pr-2 pl-5 text-sm font-black text-lime shadow-lg dark:bg-lime dark:text-ink">
           <span>有新版本可以使用</span>
           <button
             type="button"

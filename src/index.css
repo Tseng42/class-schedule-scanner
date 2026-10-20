@@ -60,6 +60,75 @@ body {
   }
 }
 
+/* Frosted "Liquid Glass" tab bar. Blur + saturate + rim highlights only — SVG
+   refraction inside backdrop-filter is Chromium-only, so it's left out to keep
+   iPhone Safari and desktop identical. */
+.liquid-glass {
+  background: rgb(255 255 255 / 0.45);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 -1px 0 rgb(0 0 0 / 0.05),
+    0 10px 30px rgb(11 11 15 / 0.14),
+    0 2px 6px rgb(11 11 15 / 0.08);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+}
+
+.liquid-glass-pill {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.55));
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 1),
+    inset 0 -1px 2px rgb(11 11 15 / 0.08),
+    0 2px 8px rgb(11 11 15 / 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .liquid-glass {
+    background: rgb(40 40 48 / 0.45);
+    border-color: rgb(255 255 255 / 0.14);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      inset 0 -1px 0 rgb(0 0 0 / 0.3),
+      0 10px 30px rgb(0 0 0 / 0.45);
+  }
+
+  .liquid-glass-pill {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0.12));
+    box-shadow:
+      inset 0 1px 1px rgb(255 255 255 / 0.35),
+      inset 0 -1px 2px rgb(0 0 0 / 0.25),
+      0 2px 8px rgb(0 0 0 / 0.35);
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass {
+    background: rgb(255 255 255 / 0.92);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .liquid-glass {
+      background: rgb(40 40 48 / 0.95);
+    }
+  }
+}
+
+/* Not exposed by Safari yet; honored by Chromium on Windows/macOS. */
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass {
+    background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .liquid-glass {
+      background: #282830;
+    }
+  }
+}
+
 @keyframes confetti-fall {
   from {
     transform: translate(0, 0) rotate(0deg);
