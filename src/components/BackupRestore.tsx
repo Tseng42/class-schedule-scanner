@@ -61,7 +61,7 @@ export function BackupRestore({ onRestored }: BackupRestoreProps) {
         <button
           type="button"
           onClick={handleExport}
-          className="rounded-full bg-ink px-5 py-2.5 text-sm font-black text-mint transition-transform active:scale-95"
+          className="rounded-full bg-ink px-5 py-2.5 text-sm font-black text-sky transition-transform active:scale-95"
         >
           匯出完整備份
         </button>

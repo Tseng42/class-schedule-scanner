@@ -43,7 +43,7 @@ npm run dev
 
 第 7、8 步的原因:現在的瀏覽器(Chrome 115+、Firefox 109+、Safari 16.1+)會擋跨網域儲存,Firebase 預設放在 `<專案>.firebaseapp.com` 的登入輔助頁面因此傳不回登入結果,表現出來就是「選完 Google 帳號回到網站還是未登入」。解法是讓這些頁面從網站自己的網域提供:`vercel.json` 把 `/__/auth/*` 轉接到 Firebase,正式環境的 `authDomain` 則直接用網站自己的網域(見 `src/services/sync/firebaseConfig.ts`)。詳見 [Firebase 官方說明](https://firebase.google.com/docs/auth/web/redirect-best-practices)。本機開發伺服器沒有這層轉接,所以本機無法測試登入。
 
-設定好之後,設定頁會多出「雲端同步」區塊,用 Google 帳號登入即可,登入一次會一直保持登入狀態。
+設定好之後,設定頁會多出「雲端同步」一項,用 Google 帳號登入即可,登入一次會一直保持登入狀態。
 
 ## LINE 提醒設定(選用)
 

@@ -63,7 +63,7 @@ export function CloudSyncSettings() {
         <button
           type="button"
           onClick={() => void handleSignIn()}
-          className="self-start rounded-full bg-ink px-5 py-2.5 text-sm font-black text-mint transition-transform active:scale-95"
+          className="self-start rounded-full bg-ink px-5 py-2.5 text-sm font-black text-sky transition-transform active:scale-95"
         >
           使用 Google 帳號同步
         </button>
@@ -82,7 +82,7 @@ export function CloudSyncSettings() {
           type="button"
           onClick={() => void handleSyncNow()}
           disabled={syncing}
-          className="rounded-full bg-ink px-5 py-2.5 text-sm font-black text-mint transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full bg-ink px-5 py-2.5 text-sm font-black text-sky transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {syncing ? "同步中…" : "立即同步"}
         </button>

@@ -23,7 +23,7 @@ export function LineReminderSettings({ settings, onChange }: LineReminderSetting
   if (!user) {
     return (
       <p className="text-xs font-bold opacity-70">
-        要先在上面的「雲端同步」登入 Google 帳號。LINE 提醒是伺服器讀雲端上的課表來發送的,沒登入就讀不到。
+        要先到「雲端同步」登入 Google 帳號。LINE 提醒是伺服器讀雲端上的課表來發送的,沒登入就讀不到。
       </p>
     );
   }
@@ -75,7 +75,7 @@ export function LineReminderSettings({ settings, onChange }: LineReminderSetting
         />
         <span>
           每堂課前 {formatDuration(settings.reminderMinutes * 60000)}提醒
-          <span className="block text-xs opacity-60">提前多久跟最上面「上課前多久提醒」用同一個設定</span>
+          <span className="block text-xs opacity-60">提前多久跟「上課前提醒」用同一個設定</span>
         </span>
       </label>
 

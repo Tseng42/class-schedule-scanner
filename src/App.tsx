@@ -1,7 +1,7 @@
-import { useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { HomePage } from "./pages/HomePage";
 import { UploadPage } from "./pages/UploadPage";
-import { SettingsPage } from "./pages/SettingsPage";
+import { SettingsPage, type SettingsSection } from "./pages/SettingsPage";
 import { ManageCoursesPage } from "./pages/ManageCoursesPage";
 import { useSwipeNavigation, type DragProgress } from "./hooks/useSwipeNavigation";
 import { useAppUpdate } from "./hooks/useAppUpdate";
@@ -32,6 +32,7 @@ interface DragState {
 function App() {
   const [view, setView] = useState<View>("home");
   const [direction, setDirection] = useState<Direction | null>(null);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
   const updateReady = useAppUpdate();
   const contentRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
@@ -39,9 +40,41 @@ function App() {
   const tabRefs = useRef(new Map<View, HTMLButtonElement>());
   const dragStateRef = useRef<DragState | null>(null);
 
+  // An open section is a history entry, so the Android back button and browser
+  // back return to the settings list instead of leaving the app.
+  const openSettingsSection = (section: SettingsSection) => {
+    window.history.pushState(null, "");
+    setDirection("next");
+    setSettingsSection(section);
+  };
+
+  const closeSettingsSection = () => window.history.back();
+
+  useEffect(() => {
+    if (!settingsSection) return;
+    const handlePopState = () => {
+      setDirection("prev");
+      setSettingsSection(null);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [settingsSection]);
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [settingsSection]);
+
   const navigateTo = (target: View) => {
     const from = TABS.findIndex((tab) => tab.view === view);
     const to = TABS.findIndex((tab) => tab.view === target);
+    if (settingsSection) {
+      if (from === to) {
+        closeSettingsSection();
+        return;
+      }
+      setSettingsSection(null);
+      window.history.back();
+    }
     if (from === to) return;
     setDirection(to > from ? "next" : "prev");
     setView(target);
@@ -77,7 +110,7 @@ function App() {
   const handleContentDragProgress = (state: DragProgress | null) => {
     const indicator = indicatorRef.current;
     const currentButton = tabRefs.current.get(view);
-    if (!indicator || !currentButton) return;
+    if (!indicator || !currentButton || settingsSection) return;
     if (!state) {
       snapIndicatorTo(view);
       return;
@@ -88,10 +121,15 @@ function App() {
 
   useSwipeNavigation(contentRef, {
     canSwipe: (swipeDirection) => {
+      if (settingsSection) return swipeDirection === "prev";
       const current = TABS.findIndex((tab) => tab.view === view);
       return Boolean(TABS[current + (swipeDirection === "next" ? 1 : -1)]);
     },
     onSwipe: (swipeDirection) => {
+      if (settingsSection) {
+        closeSettingsSection();
+        return;
+      }
       const current = TABS.findIndex((tab) => tab.view === view);
       const target = TABS[current + (swipeDirection === "next" ? 1 : -1)];
       if (target) navigateTo(target.view);
@@ -191,13 +229,19 @@ function App() {
     <div className="min-h-screen bg-cream dark:bg-ink">
       <div
         ref={contentRef}
-        key={view}
+        key={settingsSection ?? view}
         className={`pb-24 ${direction ? `page-enter-${direction}` : ""}`}
       >
         {view === "home" && <HomePage onNavigateUpload={() => navigateTo("upload")} />}
         {view === "manage" && <ManageCoursesPage onNavigateUpload={() => navigateTo("upload")} />}
         {view === "upload" && <UploadPage onNavigateHome={() => navigateTo("home")} />}
-        {view === "settings" && <SettingsPage />}
+        {view === "settings" && (
+          <SettingsPage
+            section={settingsSection}
+            onOpenSection={openSettingsSection}
+            onBack={closeSettingsSection}
+          />
+        )}
       </div>
       <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div
