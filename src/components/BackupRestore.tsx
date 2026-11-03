@@ -68,7 +68,7 @@ export function BackupRestore({ onRestored }: BackupRestoreProps) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="rounded-full border-2 border-ink px-5 py-2.5 text-sm font-black text-ink transition-transform active:scale-95 dark:border-white dark:text-white"
+          className="rounded-full border-2 border-ink px-5 py-2.5 text-sm font-black text-ink transition-transform active:scale-95"
         >
           匯入備份還原
         </button>
@@ -85,7 +85,7 @@ export function BackupRestore({ onRestored }: BackupRestoreProps) {
         />
       </div>
       {restoredFlash && <p className="text-sm font-black">已還原備份</p>}
-      {error && <p className="text-sm font-bold text-red-700">{error}</p>}
+      {error && <p className="card-error text-sm font-bold">{error}</p>}
 
       {pendingFile && (
         <ConfirmDialog

@@ -50,7 +50,7 @@ export function ReminderTimeSettings({ settings, onChange }: ReminderTimeSetting
             ))}
           </select>
         </div>
-        {error && <span className="text-xs font-bold text-red-700">{error}</span>}
+        {error && <span className="card-error text-xs font-bold">{error}</span>}
       </label>
       <p className="text-xs font-bold opacity-70">改完會自動儲存。</p>
     </>

@@ -17,6 +17,12 @@
   color-scheme: light dark;
 }
 
+/* Settings cards stay bright in both themes and no single red reaches 4.5:1 on
+   all of them, so error text carries its own white surface. */
+@utility card-error {
+  @apply rounded-xl bg-white px-3 py-2 text-red-700;
+}
+
 body {
   margin: 0;
   font-family:

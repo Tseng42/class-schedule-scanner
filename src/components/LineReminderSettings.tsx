@@ -62,7 +62,7 @@ export function LineReminderSettings({ settings, onChange }: LineReminderSetting
             }}
             className="rounded-xl border-2 border-ink/20 bg-white px-3 py-1.5 font-bold text-ink focus:border-ink focus:outline-none"
           />
-          <span className="text-xs opacity-60">到點後約 5 分鐘內送達</span>
+          <span className="text-xs opacity-70">到點後約 5 分鐘內送達</span>
         </label>
       )}
 
@@ -75,7 +75,7 @@ export function LineReminderSettings({ settings, onChange }: LineReminderSetting
         />
         <span>
           每堂課前 {formatDuration(settings.reminderMinutes * 60000)}提醒
-          <span className="block text-xs opacity-60">提前多久跟「上課前提醒」用同一個設定</span>
+          <span className="block text-xs opacity-70">提前多久跟「上課前提醒」用同一個設定</span>
         </span>
       </label>
 
@@ -93,7 +93,7 @@ export function LineReminderSettings({ settings, onChange }: LineReminderSetting
           {testing ? "傳送中…" : "發送測試訊息"}
         </button>
         {testResult && (
-          <p className={`text-sm font-bold ${testResult.ok ? "" : "text-red-700"}`}>{testResult.message}</p>
+          <p className={`text-sm font-bold ${testResult.ok ? "" : "card-error"}`}>{testResult.message}</p>
         )}
       </div>
     </>

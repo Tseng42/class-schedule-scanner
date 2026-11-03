@@ -146,7 +146,8 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
 
         {storageErrorBanner}
 
-        <section className={`flex flex-col gap-4 rounded-3xl ${activeGroup.colorClass} p-5 text-ink`}>
+        {/* Cards stay bright in dark mode, so native date/time controls inside need their light variant. */}
+        <section className={`flex scheme-light flex-col gap-4 rounded-3xl ${activeGroup.colorClass} p-5 text-ink`}>
           {activeRow.section === "reminder" && (
             <ReminderTimeSettings settings={settings} onChange={handleSettingsChange} />
           )}
@@ -197,7 +198,7 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
 
       {groups.map((group) => (
         <section key={group.title} className="flex flex-col gap-2">
-          <h2 className="px-1 text-xs font-black text-ink/50 dark:text-white/50">{group.title}</h2>
+          <h2 className="px-1 text-xs font-black text-ink/60 dark:text-white/60">{group.title}</h2>
           <div className={`divide-y divide-ink/10 overflow-hidden rounded-3xl ${group.colorClass} text-ink`}>
             {group.rows.map((row) => (
               <button
@@ -208,7 +209,7 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
               >
                 <span className="text-sm font-black">{row.title}</span>
                 <span className="flex items-center gap-2">
-                  {row.status && <span className="text-xs font-bold opacity-60">{row.status}</span>}
+                  {row.status && <span className="text-xs font-bold opacity-70">{row.status}</span>}
                   <span aria-hidden="true" className="text-base leading-none font-black opacity-40">
                     ›
                   </span>

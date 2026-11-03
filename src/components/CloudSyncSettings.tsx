@@ -67,7 +67,7 @@ export function CloudSyncSettings() {
         >
           使用 Google 帳號同步
         </button>
-        {error && <p className="text-sm font-bold text-red-700">{error}</p>}
+        {error && <p className="card-error text-sm font-bold">{error}</p>}
       </>
     );
   }
@@ -89,14 +89,14 @@ export function CloudSyncSettings() {
         <button
           type="button"
           onClick={() => void handleSignOut()}
-          className="rounded-full border-2 border-ink px-5 py-2.5 text-sm font-black text-ink transition-transform active:scale-95 dark:border-white dark:text-white"
+          className="rounded-full border-2 border-ink px-5 py-2.5 text-sm font-black text-ink transition-transform active:scale-95"
         >
           登出
         </button>
       </div>
-      <p className="text-xs font-bold opacity-50">登出不會刪除這台裝置上的課表,只是不再跟雲端同步。</p>
+      <p className="text-xs font-bold opacity-70">登出不會刪除這台裝置上的課表,只是不再跟雲端同步。</p>
       {flash && <p className="text-sm font-black">已同步</p>}
-      {error && <p className="text-sm font-bold text-red-700">{error}</p>}
+      {error && <p className="card-error text-sm font-bold">{error}</p>}
     </>
   );
 }

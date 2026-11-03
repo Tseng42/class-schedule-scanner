@@ -66,7 +66,7 @@ export function HolidayEditor({ holidays, onAdd, onRemove, onAddOfficial }: Holi
         </button>
         {officialFlash && <span className="text-xs font-black">{officialFlash}</span>}
       </div>
-      <p className="text-xs font-bold opacity-50">
+      <p className="text-xs font-bold opacity-70">
         資料來自行政院人事行政總處公告的辦公日曆表,不同學校的校曆可能有出入,加入後可以自行刪改。
       </p>
 
@@ -113,7 +113,7 @@ export function HolidayEditor({ holidays, onAdd, onRemove, onAddOfficial }: Holi
             aria-label="放假開始日期"
             className={inputClass}
           />
-          <span className="text-xs font-black opacity-50">到</span>
+          <span className="text-xs font-black opacity-70">到</span>
           <input
             type="date"
             value={endDate}
@@ -125,9 +125,9 @@ export function HolidayEditor({ holidays, onAdd, onRemove, onAddOfficial }: Holi
             aria-label="放假結束日期(選填)"
             className={inputClass}
           />
-          <span className="text-xs font-bold opacity-50">(只有一天可以不填)</span>
+          <span className="text-xs font-bold opacity-70">(只有一天可以不填)</span>
         </div>
-        {error && <p className="text-xs font-black text-red-700">{error}</p>}
+        {error && <p className="card-error text-xs font-black">{error}</p>}
         <button
           type="button"
           onClick={handleAdd}

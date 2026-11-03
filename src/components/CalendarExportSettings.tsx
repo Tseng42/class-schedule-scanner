@@ -40,7 +40,7 @@ export function CalendarExportSettings({ schedule, settings }: CalendarExportSet
       >
         匯出 .ics 行事曆檔
       </button>
-      {exportError && <p className="text-sm font-bold text-red-700">{exportError}</p>}
+      {exportError && <p className="card-error text-sm font-bold">{exportError}</p>}
     </>
   );
 }

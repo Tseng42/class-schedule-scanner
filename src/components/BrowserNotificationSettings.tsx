@@ -45,7 +45,7 @@ export function BrowserNotificationSettings({ reminderMinutes }: BrowserNotifica
         只在這個網頁開著的時候才會準時跳出來,分頁關掉或瀏覽器背景太久都可能失效,不是可靠的提醒方式。
       </p>
       {ios && (
-        <p className="text-xs font-black opacity-60">
+        <p className="text-xs font-black opacity-70">
           目前開啟方式:{standalone ? "獨立 App(已加到主畫面)" : "Safari 分頁——iPhone 通知必須先加到主畫面才能用"}
         </p>
       )}
@@ -64,7 +64,7 @@ export function BrowserNotificationSettings({ reminderMinutes }: BrowserNotifica
           開啟瀏覽器提醒
         </button>
       )}
-      {notificationError && <p className="text-sm font-bold text-red-700">{notificationError}</p>}
+      {notificationError && <p className="card-error text-sm font-bold">{notificationError}</p>}
     </>
   );
 }
