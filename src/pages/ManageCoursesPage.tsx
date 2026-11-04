@@ -381,14 +381,6 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={onNavigateUpload}
-        className="self-start rounded-full border-2 border-ink px-5 py-2.5 text-sm font-black text-ink transition-transform active:scale-95 dark:border-white dark:text-white"
-      >
-        + 掃描新課表
-      </button>
-
       {pendingDeleteId && (
         <ConfirmDialog
           title="刪除這堂課?"
