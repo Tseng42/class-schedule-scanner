@@ -22,6 +22,23 @@ export interface CourseDraft {
   onceDate: string;
 }
 
+export function newTimeSlotDraft(): TimeSlotDraft {
+  return { localId: generateId(), dayOfWeek: "MO", startTime: "09:00", endTime: "10:00" };
+}
+
+/** Starting point for a course typed in by hand. */
+export function blankCourseDraft(): CourseDraft {
+  return {
+    localId: generateId(),
+    name: "",
+    teacher: "",
+    location: "",
+    timeSlots: [newTimeSlotDraft()],
+    recurrenceType: "weekly",
+    onceDate: "",
+  };
+}
+
 export function extractionToDrafts(result: ExtractionResult): CourseDraft[] {
   return result.courses.map((course) => ({
     localId: generateId(),

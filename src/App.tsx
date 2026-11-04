@@ -1,18 +1,18 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { HomePage } from "./pages/HomePage";
-import { UploadPage } from "./pages/UploadPage";
+import { AddCoursePage, type AddCourseMode } from "./pages/AddCoursePage";
 import { SettingsPage, type SettingsSection } from "./pages/SettingsPage";
 import { ManageCoursesPage } from "./pages/ManageCoursesPage";
 import { useSwipeNavigation, type DragProgress } from "./hooks/useSwipeNavigation";
 import { useAppUpdate } from "./hooks/useAppUpdate";
 
-type View = "home" | "upload" | "manage" | "settings";
+type View = "home" | "add" | "manage" | "settings";
 type Direction = "next" | "prev";
 
 const TABS: { view: View; label: string }[] = [
   { view: "home", label: "課表" },
   { view: "manage", label: "所有課程" },
-  { view: "upload", label: "掃描課表" },
+  { view: "add", label: "新增課程" },
   { view: "settings", label: "設定" },
 ];
 
@@ -33,7 +33,7 @@ function App() {
   const [view, setView] = useState<View>("home");
   const [direction, setDirection] = useState<Direction | null>(null);
   const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
-  const [manageStartsAdding, setManageStartsAdding] = useState(false);
+  const [addStartMode, setAddStartMode] = useState<AddCourseMode | null>(null);
   const updateReady = useAppUpdate();
   const contentRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
@@ -66,7 +66,7 @@ function App() {
   }, [settingsSection]);
 
   const navigateTo = (target: View) => {
-    setManageStartsAdding(false);
+    setAddStartMode(null);
     const from = TABS.findIndex((tab) => tab.view === view);
     const to = TABS.findIndex((tab) => tab.view === target);
     if (settingsSection) {
@@ -82,10 +82,10 @@ function App() {
     setView(target);
   };
 
-  const openNewCourseForm = () => {
-    navigateTo("manage");
-    // Set after navigateTo, which clears it, so only this visit opens with the form.
-    setManageStartsAdding(true);
+  const openAddCourse = (mode: AddCourseMode) => {
+    navigateTo("add");
+    // Set after navigateTo, which clears it, so only this visit skips the method picker.
+    setAddStartMode(mode);
   };
 
   const snapIndicatorTo = (target: View) => {
@@ -241,12 +241,21 @@ function App() {
         className={`pb-24 ${direction ? `page-enter-${direction}` : ""}`}
       >
         {view === "home" && (
-          <HomePage onNavigateUpload={() => navigateTo("upload")} onAddCourse={openNewCourseForm} />
+          <HomePage onNavigateUpload={() => openAddCourse("scan")} onAddCourse={() => openAddCourse("manual")} />
         )}
         {view === "manage" && (
-          <ManageCoursesPage onNavigateUpload={() => navigateTo("upload")} startAdding={manageStartsAdding} />
+          <ManageCoursesPage
+            onNavigateUpload={() => openAddCourse("scan")}
+            onAddCourse={() => openAddCourse("manual")}
+          />
         )}
-        {view === "upload" && <UploadPage onNavigateHome={() => navigateTo("home")} />}
+        {view === "add" && (
+          <AddCoursePage
+            initialMode={addStartMode}
+            onNavigateHome={() => navigateTo("home")}
+            onNavigateManage={() => navigateTo("manage")}
+          />
+        )}
         {view === "settings" && (
           <SettingsPage
             section={settingsSection}

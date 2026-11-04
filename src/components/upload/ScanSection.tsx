@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { ImageUploader } from "../components/upload/ImageUploader";
-import { ExtractionResultView } from "../components/upload/ExtractionResultView";
-import { useImageUpload } from "../hooks/useImageUpload";
-import { useScheduleExtraction } from "../hooks/useScheduleExtraction";
+import { ImageUploader } from "./ImageUploader";
+import { ExtractionResultView } from "./ExtractionResultView";
+import { useImageUpload } from "../../hooks/useImageUpload";
+import { useScheduleExtraction } from "../../hooks/useScheduleExtraction";
 
-interface UploadPageProps {
+interface ScanSectionProps {
   onNavigateHome: () => void;
 }
 
-export function UploadPage({ onNavigateHome }: UploadPageProps) {
+export function ScanSection({ onNavigateHome }: ScanSectionProps) {
   const { uploaded, error: uploadError, selectFile, reset: resetUpload } = useImageUpload();
   const { state, run, reset: resetExtraction } = useScheduleExtraction();
   const [savedResult, setSavedResult] = useState<{ added: number; skipped: number } | null>(null);
@@ -29,14 +29,7 @@ export function UploadPage({ onNavigateHome }: UploadPageProps) {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
-      <header>
-        <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">課表掃描</h1>
-        <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">
-          上傳課表截圖或 PDF,讓 Claude 幫你辨識成結構化課表。
-        </p>
-      </header>
-
+    <>
       <ImageUploader
         onSelect={handleSelect}
         previewUrl={uploaded?.previewUrl ?? null}
@@ -76,6 +69,6 @@ export function UploadPage({ onNavigateHome }: UploadPageProps) {
           重新上傳
         </button>
       )}
-    </main>
+    </>
   );
 }
