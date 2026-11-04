@@ -25,6 +25,10 @@ export function ImageUploader({
     if (file) onSelect(file);
   };
 
+  // The zone turns lime while dragging in both themes, so its text has to stay ink.
+  const textClass = isDragging ? "text-ink" : "text-ink dark:text-white";
+  const hintClass = isDragging ? "text-ink/60" : "text-ink/60 dark:text-white/60";
+
   return (
     <div
       onClick={() => !disabled && inputRef.current?.click()}
@@ -55,15 +59,15 @@ export function ImageUploader({
       {previewUrl ? (
         <img src={previewUrl} alt="課表預覽" className="max-h-56 rounded-2xl border-2 border-ink object-contain" />
       ) : isPdf && fileName ? (
-        <div className="flex flex-col items-center gap-2 text-ink dark:text-white">
+        <div className={`flex flex-col items-center gap-2 ${textClass}`}>
           <span className="text-4xl">📄</span>
           <span className="text-sm font-bold">{fileName}</span>
         </div>
       ) : (
         <>
           <span className="text-4xl">🖼️</span>
-          <p className="text-sm font-black text-ink dark:text-white">點擊或拖曳課表圖片到這裡</p>
-          <p className="text-xs font-bold text-ink/40 dark:text-white/40">
+          <p className={`text-sm font-black ${textClass}`}>點擊或拖曳課表圖片到這裡</p>
+          <p className={`text-xs font-bold ${hintClass}`}>
             支援 JPEG / PNG / GIF / WebP / PDF
           </p>
         </>

@@ -168,7 +168,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
       <header>
         <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">所有課程</h1>
-        <p className="mt-1 text-sm font-bold text-ink/50 dark:text-white/50">共 {courses.length} 堂課</p>
+        <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">共 {courses.length} 堂課</p>
       </header>
 
       {storageError && (
@@ -219,7 +219,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
                     className={`rounded-full px-3 py-1 text-xs font-black ${
                       draft.recurrenceType === "weekly"
                         ? "bg-ink text-lime"
-                        : "border-2 border-ink/15 text-ink/50 dark:border-white/20 dark:text-white/50"
+                        : "border-2 border-ink/15 text-ink/60 dark:border-white/20 dark:text-white/60"
                     }`}
                   >
                     每週重複
@@ -230,7 +230,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
                     className={`rounded-full px-3 py-1 text-xs font-black ${
                       draft.recurrenceType === "once"
                         ? "bg-ink text-lime"
-                        : "border-2 border-ink/15 text-ink/50 dark:border-white/20 dark:text-white/50"
+                        : "border-2 border-ink/15 text-ink/60 dark:border-white/20 dark:text-white/60"
                     }`}
                   >
                     只有一次(補課)
@@ -257,7 +257,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
                             }
                             className="rounded-full border-2 border-ink/15 px-2 py-1 text-xs font-bold text-ink dark:border-white/20 dark:bg-transparent dark:text-white"
                           />
-                          <span className="text-xs font-black text-ink/40 dark:text-white/40">–</span>
+                          <span className="text-xs font-black text-ink/60 dark:text-white/60">–</span>
                           <input
                             type="time"
                             value={draft.timeSlots[0].endTime}
@@ -290,7 +290,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
                             onChange={(event) => updateTimeSlot(slot.localId, "startTime", event.target.value)}
                             className="rounded-full border-2 border-ink/15 px-2 py-1 text-xs font-bold text-ink dark:border-white/20 dark:bg-transparent dark:text-white"
                           />
-                          <span className="text-xs font-black text-ink/40 dark:text-white/40">–</span>
+                          <span className="text-xs font-black text-ink/60 dark:text-white/60">–</span>
                           <input
                             type="time"
                             value={slot.endTime}
@@ -301,7 +301,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
                             type="button"
                             onClick={() => removeTimeSlot(slot.localId)}
                             disabled={draft.timeSlots.length <= 1}
-                            className="text-xs font-black text-ink/40 hover:text-pink-dark disabled:cursor-not-allowed disabled:opacity-30 dark:text-white/40"
+                            className="text-xs font-black text-ink/60 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-30 dark:text-white/60"
                           >
                             移除
                           </button>
@@ -318,7 +318,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
                   )}
                 </div>
 
-                {draftError && <p className="mt-2 text-xs font-black text-pink-dark">{draftError}</p>}
+                {draftError && <p className="mt-2 text-xs font-black text-red-700 dark:text-pink">{draftError}</p>}
 
                 <div className="mt-3 flex gap-2">
                   <button
@@ -353,7 +353,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
                     {describeSchedule(course)}
                   </p>
                   {(course.teacher || course.location) && (
-                    <p className="mt-1 text-xs font-bold text-ink/40 dark:text-white/40">
+                    <p className="mt-1 text-xs font-bold text-ink/60 dark:text-white/60">
                       {[course.teacher, course.location].filter(Boolean).join(" · ")}
                     </p>
                   )}

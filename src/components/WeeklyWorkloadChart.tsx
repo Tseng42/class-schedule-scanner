@@ -35,8 +35,8 @@ export function WeeklyWorkloadChart({ schedule, settings, today }: WeeklyWorkloa
   return (
     <section className="rounded-3xl border-2 border-ink/10 bg-white p-4 dark:border-white/10 dark:bg-white/5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="text-xs font-black tracking-wide text-ink/40 uppercase dark:text-white/40">本週上課量</h2>
-        <p className="text-xs font-bold text-ink/50 dark:text-white/50">
+        <h2 className="text-xs font-black tracking-wide text-ink/60 uppercase dark:text-white/60">本週上課量</h2>
+        <p className="text-xs font-bold text-ink/60 dark:text-white/60">
           共 {formatHours(totalHours)} 小時・{DAY_OF_WEEK_LABELS[busiestDay.day]}最忙
         </p>
       </div>
@@ -51,7 +51,7 @@ export function WeeklyWorkloadChart({ schedule, settings, today }: WeeklyWorkloa
             />
             <span
               className={`text-[10px] font-black ${
-                item.isToday ? "text-ink dark:text-lime" : "text-ink/40 dark:text-white/40"
+                item.isToday ? "text-ink dark:text-lime" : "text-ink/60 dark:text-white/60"
               }`}
             >
               {DAY_OF_WEEK_LABELS[item.day].replace("週", "")}

@@ -69,11 +69,11 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
         >
           {isSharing ? "產生中…" : "分享課表"}
         </button>
-        <span className="ml-auto text-xs font-bold text-ink/50 dark:text-white/50">
+        <span className="ml-auto text-xs font-bold text-ink/60 dark:text-white/60">
           {semesterWeekLabel ? `${semesterWeekLabel} · ${rangeLabel}` : rangeLabel}
         </span>
       </div>
-      {shareError && <p className="text-xs font-bold text-pink-dark">{shareError}</p>}
+      {shareError && <p className="text-xs font-bold text-red-700 dark:text-pink">{shareError}</p>}
 
       <div className="overflow-x-auto rounded-3xl border-2 border-ink bg-white dark:border-white/20 dark:bg-white/5">
         <div style={{ minWidth: GUTTER_WIDTH + columns.length * MIN_COLUMN_WIDTH }}>
@@ -91,7 +91,7 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
                 >
                   {DAY_OF_WEEK_LABELS[column.day]}
                 </p>
-                <p className="mt-0.5 text-[10px] font-bold text-ink/40 dark:text-white/40">
+                <p className="mt-0.5 text-[10px] font-bold text-ink/60 dark:text-white/60">
                   {formatMonthDay(column.date)}
                 </p>
                 {column.holidayName && (
@@ -113,7 +113,7 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
               {hours.map((hour, index) => (
                 <span
                   key={hour}
-                  className="absolute right-1 text-[10px] font-bold text-ink/40 dark:text-white/40"
+                  className="absolute right-1 text-[10px] font-bold text-ink/60 dark:text-white/60"
                   style={{ top: index * HOUR_HEIGHT + 2 }}
                 >
                   {String(hour).padStart(2, "0")}:00
@@ -163,7 +163,7 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
                         {occurrence.course.recurrence.type === "once" ? " · 補課" : ""}
                       </p>
                       {reason !== undefined && (
-                        <p className="mt-0.5 text-[10px] leading-tight font-black text-pink-dark">
+                        <p className="mt-0.5 text-[10px] leading-tight font-black text-red-700 dark:text-pink">
                           {reason === "停課" ? "停課" : `停課 · ${reason}`}
                         </p>
                       )}

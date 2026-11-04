@@ -38,7 +38,7 @@ export function ExtractionResultView({ state, onSaved }: ExtractionResultViewPro
       )}
 
       {courses.length === 0 ? (
-        <div className="rounded-3xl border-2 border-ink/10 bg-white p-6 text-center font-bold text-ink/50 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
+        <div className="rounded-3xl border-2 border-ink/10 bg-white p-6 text-center font-bold text-ink/60 dark:border-white/10 dark:bg-white/5 dark:text-white/60">
           沒有辨識出任何課程,請確認圖片內容是課表
         </div>
       ) : (
@@ -46,7 +46,7 @@ export function ExtractionResultView({ state, onSaved }: ExtractionResultViewPro
       )}
 
       <details className="rounded-3xl border-2 border-ink/10 bg-white p-4 text-xs dark:border-white/10 dark:bg-white/5">
-        <summary className="cursor-pointer font-black text-ink/50 dark:text-white/50">原始辨識 JSON</summary>
+        <summary className="cursor-pointer font-black text-ink/60 dark:text-white/60">原始辨識 JSON</summary>
         <pre className="mt-2 overflow-x-auto font-mono whitespace-pre-wrap break-all text-ink/70 dark:text-white/70">
           {JSON.stringify(state.result, null, 2)}
         </pre>

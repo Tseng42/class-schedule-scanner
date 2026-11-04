@@ -226,7 +226,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
                   {EVENT_KIND_LABELS[item.kind]}
                 </span>
                 {item.title} · {formatEventWhen(item)}
-                <span className="font-bold opacity-60"> · {formatRemind(item.remindMinutes)}</span>
+                <span className="font-bold opacity-70"> · {formatRemind(item.remindMinutes)}</span>
               </span>
               <button
                 type="button"
@@ -270,7 +270,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
               aria-label="停課開始日期"
               className={inputClass}
             />
-            <span className="text-xs font-black text-ink/40 dark:text-white/40">到</span>
+            <span className="text-xs font-black text-ink/60 dark:text-white/60">到</span>
             <input
               type="date"
               value={cancelEnd}
@@ -282,7 +282,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
               aria-label="停課結束日期(選填)"
               className={inputClass}
             />
-            <span className="text-xs font-bold text-ink/40 dark:text-white/40">(只有一天可以不填)</span>
+            <span className="text-xs font-bold text-ink/60 dark:text-white/60">(只有一天可以不填)</span>
           </div>
           <input
             type="text"
@@ -291,7 +291,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
             placeholder="原因(選填),例如 國慶連假"
             className={inputClass}
           />
-          {cancelError && <p className="text-xs font-black text-pink-dark">{cancelError}</p>}
+          {cancelError && <p className="text-xs font-black text-red-700 dark:text-pink">{cancelError}</p>}
           <div className="flex gap-2">
             <button
               type="button"
@@ -322,7 +322,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
                 className={`rounded-full px-3 py-1 text-xs font-black ${
                   eventKind === kind
                     ? "bg-ink text-lime"
-                    : "border-2 border-ink/15 text-ink/50 dark:border-white/20 dark:text-white/50"
+                    : "border-2 border-ink/15 text-ink/60 dark:border-white/20 dark:text-white/60"
                 }`}
               >
                 {EVENT_KIND_LABELS[kind]}
@@ -356,7 +356,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
               aria-label="事項時間(選填)"
               className={inputClass}
             />
-            <span className="text-xs font-bold text-ink/40 dark:text-white/40">(時間可以不填)</span>
+            <span className="text-xs font-bold text-ink/60 dark:text-white/60">(時間可以不填)</span>
           </div>
           <label className="flex items-center gap-2 text-xs font-black text-ink/70 dark:text-white/70">
             提醒
@@ -372,7 +372,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
               ))}
             </select>
           </label>
-          {eventError && <p className="text-xs font-black text-pink-dark">{eventError}</p>}
+          {eventError && <p className="text-xs font-black text-red-700 dark:text-pink">{eventError}</p>}
           <div className="flex gap-2">
             <button
               type="button"
@@ -413,11 +413,11 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
               aria-label="備註日期(選填)"
               className={inputClass}
             />
-            <span className="text-xs font-bold text-ink/40 dark:text-white/40">
+            <span className="text-xs font-bold text-ink/60 dark:text-white/60">
               (選填,不填就是一般提醒,不綁特定上課日)
             </span>
           </div>
-          {noteError && <p className="text-xs font-black text-pink-dark">{noteError}</p>}
+          {noteError && <p className="text-xs font-black text-red-700 dark:text-pink">{noteError}</p>}
           <div className="flex gap-2">
             <button
               type="button"

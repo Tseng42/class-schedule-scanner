@@ -134,7 +134,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
 
   if (drafts.length === 0) {
     return (
-      <div className="rounded-3xl border-2 border-ink/10 bg-white p-6 text-center font-bold text-ink/50 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
+      <div className="rounded-3xl border-2 border-ink/10 bg-white p-6 text-center font-bold text-ink/60 dark:border-white/10 dark:bg-white/5 dark:text-white/60">
         沒有課程可以儲存了
       </div>
     );
@@ -163,7 +163,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
                 <button
                   type="button"
                   onClick={() => removeCourse(course.localId)}
-                  className="shrink-0 rounded-full px-2 py-1 text-xs font-black text-ink/40 hover:bg-pink hover:text-ink dark:text-white/40"
+                  className="shrink-0 rounded-full px-2 py-1 text-xs font-black text-ink/60 hover:bg-pink hover:text-ink dark:text-white/60"
                 >
                   刪除
                 </button>
@@ -193,7 +193,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
                   className={`rounded-full px-3 py-1 text-xs font-black ${
                     course.recurrenceType === "weekly"
                       ? "bg-ink text-lime"
-                      : "border-2 border-ink/15 text-ink/50 dark:border-white/20 dark:text-white/50"
+                      : "border-2 border-ink/15 text-ink/60 dark:border-white/20 dark:text-white/60"
                   }`}
                 >
                   每週重複
@@ -204,7 +204,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
                   className={`rounded-full px-3 py-1 text-xs font-black ${
                     course.recurrenceType === "once"
                       ? "bg-ink text-lime"
-                      : "border-2 border-ink/15 text-ink/50 dark:border-white/20 dark:text-white/50"
+                      : "border-2 border-ink/15 text-ink/60 dark:border-white/20 dark:text-white/60"
                   }`}
                 >
                   只有一次(補課)
@@ -231,7 +231,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
                           }
                           className="rounded-full border-2 border-ink/15 px-2 py-1 text-xs font-bold text-ink dark:border-white/20 dark:bg-transparent dark:text-white"
                         />
-                        <span className="text-xs font-black text-ink/40 dark:text-white/40">–</span>
+                        <span className="text-xs font-black text-ink/60 dark:text-white/60">–</span>
                         <input
                           type="time"
                           value={course.timeSlots[0].endTime}
@@ -268,7 +268,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
                           }
                           className="rounded-full border-2 border-ink/15 px-2 py-1 text-xs font-bold text-ink dark:border-white/20 dark:bg-transparent dark:text-white"
                         />
-                        <span className="text-xs font-black text-ink/40 dark:text-white/40">–</span>
+                        <span className="text-xs font-black text-ink/60 dark:text-white/60">–</span>
                         <input
                           type="time"
                           value={slot.endTime}
@@ -281,7 +281,7 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
                           type="button"
                           onClick={() => removeTimeSlot(course.localId, slot.localId)}
                           disabled={course.timeSlots.length <= 1}
-                          className="text-xs font-black text-ink/40 hover:text-pink-dark disabled:cursor-not-allowed disabled:opacity-30 dark:text-white/40"
+                          className="text-xs font-black text-ink/60 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-30 dark:text-white/60"
                         >
                           移除
                         </button>
@@ -298,16 +298,16 @@ export function EditableCourseList({ result, onSaved }: EditableCourseListProps)
                 )}
               </div>
 
-              {error && <p className="mt-2 text-xs font-black text-pink-dark">{error}</p>}
+              {error && <p className="mt-2 text-xs font-black text-red-700 dark:text-pink">{error}</p>}
             </div>
           );
         })}
       </div>
 
       {!canSave && (
-        <p className="text-sm font-bold text-pink-dark">有課程還沒填完整,請先修正上面標紅框的地方</p>
+        <p className="text-sm font-bold text-red-700 dark:text-pink">有課程還沒填完整,請先修正上面標紅框的地方</p>
       )}
-      {saveError && <p className="text-sm font-bold text-pink-dark">{saveError}</p>}
+      {saveError && <p className="text-sm font-bold text-red-700 dark:text-pink">{saveError}</p>}
 
       <button
         type="button"

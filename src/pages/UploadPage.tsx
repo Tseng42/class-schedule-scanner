@@ -32,7 +32,7 @@ export function UploadPage({ onNavigateHome }: UploadPageProps) {
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
       <header>
         <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">課表掃描</h1>
-        <p className="mt-1 text-sm font-bold text-ink/50 dark:text-white/50">
+        <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">
           上傳課表截圖或 PDF,讓 Claude 幫你辨識成結構化課表。
         </p>
       </header>

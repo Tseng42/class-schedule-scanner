@@ -64,7 +64,7 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
       <header>
         <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">課表</h1>
-        <p className="mt-1 text-sm font-bold text-ink/50 dark:text-white/50">{todayLabel}</p>
+        <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">{todayLabel}</p>
       </header>
 
       {current ? (
@@ -108,7 +108,7 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
 
       {upcomingEvents.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="px-1 text-xs font-black tracking-wide text-ink/40 uppercase dark:text-white/40">
+          <h2 className="px-1 text-xs font-black tracking-wide text-ink/60 uppercase dark:text-white/60">
             近期事項
           </h2>
           <ul className="flex flex-col gap-2">
@@ -124,12 +124,12 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
                     </span>
                     {item.event.title}
                   </p>
-                  <p className="mt-0.5 text-xs font-bold text-ink/50 dark:text-white/50">{item.course.name}</p>
+                  <p className="mt-0.5 text-xs font-bold text-ink/60 dark:text-white/60">{item.course.name}</p>
                 </div>
                 <span className="shrink-0 text-right text-xs font-black text-ink dark:text-white">
                   {formatDaysUntil(daysUntil(item.event, now))}
                   {item.event.time && (
-                    <span className="block font-bold text-ink/50 dark:text-white/50">{item.event.time}</span>
+                    <span className="block font-bold text-ink/60 dark:text-white/60">{item.event.time}</span>
                   )}
                 </span>
               </li>
