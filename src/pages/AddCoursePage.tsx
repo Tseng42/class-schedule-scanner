@@ -7,17 +7,15 @@ import { ScanSection } from "../components/upload/ScanSection";
 
 export type AddCourseMode = "manual" | "scan";
 
-const MODES: Record<AddCourseMode, { title: string; summary: string; intro: string; cardClass: string }> = {
+const MODES: Record<AddCourseMode, { title: string; intro: string; cardClass: string }> = {
   manual: {
     title: "手動輸入",
-    summary: "一堂一堂填課名、時間和地點。免費,馬上能用。",
     intro: "一次填一堂,存好會清空,方便接著填下一堂。",
     cardClass: "bg-lime",
   },
   scan: {
     title: "掃描圖片",
-    summary: "上傳課表截圖或 PDF,讓 Claude 一次辨識整張。需要先在 設定 › API Key 貼上自己的 key。",
-    intro: "上傳課表截圖或 PDF,讓 Claude 幫你辨識成結構化課表。",
+    intro: "需要先在 設定 › API Key 貼上自己的 key。",
     cardClass: "bg-sky",
   },
 };
@@ -48,10 +46,7 @@ export function AddCoursePage({ initialMode, onNavigateHome, onNavigateManage }:
               onClick={() => setMode(key)}
               className={`flex items-center justify-between gap-4 rounded-3xl ${MODES[key].cardClass} p-5 text-left text-ink transition-transform active:scale-[0.98]`}
             >
-              <span>
-                <span className="block text-xl font-black">{MODES[key].title}</span>
-                <span className="mt-1 block text-sm font-bold">{MODES[key].summary}</span>
-              </span>
+              <span className="text-xl font-black">{MODES[key].title}</span>
               <span aria-hidden="true" className="text-2xl font-black">
                 ›
               </span>
