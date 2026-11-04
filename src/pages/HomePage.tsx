@@ -18,6 +18,7 @@ import {
 
 interface HomePageProps {
   onNavigateUpload: () => void;
+  onAddCourse: () => void;
 }
 
 /** Undated notes are general reminders (always shown); dated ones only surface on their matching class day. */
@@ -32,7 +33,7 @@ function isNotificationGranted(): boolean {
   return typeof Notification !== "undefined" && Notification.permission === "granted";
 }
 
-export function HomePage({ onNavigateUpload }: HomePageProps) {
+export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const [schedule] = useState(() => loadSchedule());
   const [settings] = useState(() => loadSettings());
   const now = useNow();
@@ -43,13 +44,22 @@ export function HomePage({ onNavigateUpload }: HomePageProps) {
     return (
       <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 px-4 py-10 text-center">
         <p className="text-2xl font-black text-ink dark:text-white">還沒有課表資料</p>
-        <button
-          type="button"
-          onClick={onNavigateUpload}
-          className="rounded-full border-2 border-ink bg-lime px-6 py-3 text-sm font-black text-ink transition-transform active:scale-95 dark:border-lime"
-        >
-          掃描第一張課表
-        </button>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button
+            type="button"
+            onClick={onAddCourse}
+            className="rounded-full border-2 border-ink bg-lime px-6 py-3 text-sm font-black text-ink transition-transform active:scale-95 dark:border-lime"
+          >
+            + 新增課程
+          </button>
+          <button
+            type="button"
+            onClick={onNavigateUpload}
+            className="rounded-full border-2 border-ink bg-lime px-6 py-3 text-sm font-black text-ink transition-transform active:scale-95 dark:border-lime"
+          >
+            掃描第一張課表
+          </button>
+        </div>
       </main>
     );
   }

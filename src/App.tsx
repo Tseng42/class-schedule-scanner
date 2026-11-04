@@ -33,6 +33,7 @@ function App() {
   const [view, setView] = useState<View>("home");
   const [direction, setDirection] = useState<Direction | null>(null);
   const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
+  const [manageStartsAdding, setManageStartsAdding] = useState(false);
   const updateReady = useAppUpdate();
   const contentRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
@@ -65,6 +66,7 @@ function App() {
   }, [settingsSection]);
 
   const navigateTo = (target: View) => {
+    setManageStartsAdding(false);
     const from = TABS.findIndex((tab) => tab.view === view);
     const to = TABS.findIndex((tab) => tab.view === target);
     if (settingsSection) {
@@ -78,6 +80,12 @@ function App() {
     if (from === to) return;
     setDirection(to > from ? "next" : "prev");
     setView(target);
+  };
+
+  const openNewCourseForm = () => {
+    navigateTo("manage");
+    // Set after navigateTo, which clears it, so only this visit opens with the form.
+    setManageStartsAdding(true);
   };
 
   const snapIndicatorTo = (target: View) => {
@@ -232,8 +240,12 @@ function App() {
         key={settingsSection ?? view}
         className={`pb-24 ${direction ? `page-enter-${direction}` : ""}`}
       >
-        {view === "home" && <HomePage onNavigateUpload={() => navigateTo("upload")} />}
-        {view === "manage" && <ManageCoursesPage onNavigateUpload={() => navigateTo("upload")} />}
+        {view === "home" && (
+          <HomePage onNavigateUpload={() => navigateTo("upload")} onAddCourse={openNewCourseForm} />
+        )}
+        {view === "manage" && (
+          <ManageCoursesPage onNavigateUpload={() => navigateTo("upload")} startAdding={manageStartsAdding} />
+        )}
         {view === "upload" && <UploadPage onNavigateHome={() => navigateTo("home")} />}
         {view === "settings" && (
           <SettingsPage

@@ -23,6 +23,8 @@ const NEW_COURSE_ID = "new";
 
 interface ManageCoursesPageProps {
   onNavigateUpload: () => void;
+  /** Open with the new-course form already showing, e.g. when arriving from the 課表 empty state. */
+  startAdding?: boolean;
 }
 
 function describeSchedule(course: Course): string {
@@ -41,16 +43,28 @@ function newTimeSlot(): TimeSlotDraft {
   return { localId: generateId(), dayOfWeek: "MO", startTime: "09:00", endTime: "10:00" };
 }
 
+function blankDraft(): CourseDraft {
+  return {
+    localId: generateId(),
+    name: "",
+    teacher: "",
+    location: "",
+    timeSlots: [newTimeSlot()],
+    recurrenceType: "weekly",
+    onceDate: "",
+  };
+}
+
 /** addCourses silently skips a course that matches an existing one, so say so before the user saves. */
 function duplicateError(draft: CourseDraft, courses: Course[]): string | null {
   const [candidate] = draftsToCourses([draft]);
   return courses.some((course) => isSameCourse(course, candidate)) ? "已經有同名稱、同時段的課了" : null;
 }
 
-export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) {
+export function ManageCoursesPage({ onNavigateUpload, startAdding = false }: ManageCoursesPageProps) {
   const [courses, setCourses] = useState<Course[]>(() => loadSchedule().courses);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<CourseDraft | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(() => (startAdding ? NEW_COURSE_ID : null));
+  const [draft, setDraft] = useState<CourseDraft | null>(() => (startAdding ? blankDraft() : null));
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
 
@@ -68,15 +82,7 @@ export function ManageCoursesPage({ onNavigateUpload }: ManageCoursesPageProps) 
 
   const startNew = () => {
     setEditingId(NEW_COURSE_ID);
-    setDraft({
-      localId: generateId(),
-      name: "",
-      teacher: "",
-      location: "",
-      timeSlots: [newTimeSlot()],
-      recurrenceType: "weekly",
-      onceDate: "",
-    });
+    setDraft(blankDraft());
   };
 
   const startEdit = (course: Course) => {
