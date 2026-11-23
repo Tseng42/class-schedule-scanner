@@ -1,19 +1,63 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { loadSchedule } from "../services/storage/scheduleRepository";
 import { loadSettings } from "../services/storage/settingsRepository";
 import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
+import { ClassProgressRing } from "../components/ClassProgressRing";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
+import { burstConfetti } from "../lib/confetti";
+import { formatDateRange } from "../lib/formatDate";
 import { EVENT_KIND_LABELS, type Course } from "../schema/course";
+import type { Schedule } from "../schema/schedule";
+import type { AppSettings } from "../schema/settings";
 import { daysUntil, formatDaysUntil, getUpcomingEvents } from "../services/scheduling/events";
 import { toDateKey } from "../services/scheduling/dateKey";
 import {
   findCurrentOccurrence,
+  formatCountdown,
   formatDuration,
   formatOccurrenceDay,
   getNextOccurrence,
   getOccurrencesForDate,
+  type CourseOccurrence,
 } from "../services/scheduling/nextClass";
+import { getHolidayCountdown, getSemesterStatus } from "../services/scheduling/semester";
+
+/** The last stretch of a class, when the countdown ticks every second. */
+const FINAL_COUNTDOWN_MS = 5 * 60 * 1000;
+/** How long "下課啦！" stays up after a class ends. */
+const CLASS_END_CELEBRATION_MS = 60 * 1000;
+
+/** Classes whose end has already been celebrated, so returning to this page doesn't fire the confetti again. */
+const celebratedClasses = new Set<string>();
+
+function occurrenceKey(occurrence: CourseOccurrence): string {
+  return `${occurrence.dateKey}|${occurrence.course.id}|${occurrence.timeSlot.id}`;
+}
+
+/** The latest class that ended less than CLASS_END_CELEBRATION_MS ago. */
+function findJustEnded(occurrences: CourseOccurrence[], now: Date): CourseOccurrence | undefined {
+  return [...occurrences]
+    .reverse()
+    .find((occurrence) => now >= occurrence.endAt && now.getTime() - occurrence.endAt.getTime() < CLASS_END_CELEBRATION_MS);
+}
+
+/** When the home screen next needs to redraw: a class starting or ending, or the next second of a countdown. */
+function nextScreenChange(schedule: Schedule, settings: AppSettings, at: Date): Date | null {
+  const occurrences = getOccurrencesForDate(schedule, at, settings);
+  const running = findCurrentOccurrence(occurrences, at);
+  if (running) {
+    const msLeft = running.endAt.getTime() - at.getTime();
+    if (msLeft > FINAL_COUNTDOWN_MS) return new Date(running.endAt.getTime() - FINAL_COUNTDOWN_MS);
+    return new Date(at.getTime() + (msLeft % 1000 || 1000));
+  }
+  const candidates: number[] = [];
+  const ended = findJustEnded(occurrences, at);
+  if (ended) candidates.push(ended.endAt.getTime() + CLASS_END_CELEBRATION_MS);
+  const upcoming = getNextOccurrence(schedule, at, settings);
+  if (upcoming) candidates.push(upcoming.startAt.getTime());
+  return candidates.length > 0 ? new Date(Math.min(...candidates)) : null;
+}
 
 interface HomePageProps {
   onNavigateUpload: () => void;
@@ -35,9 +79,20 @@ function isNotificationGranted(): boolean {
 export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const [schedule] = useState(() => loadSchedule());
   const [settings] = useState(() => loadSettings());
-  const now = useNow();
+  const now = useNow((at) => nextScreenChange(schedule, settings, at));
 
   useClassReminders(schedule, settings, isNotificationGranted());
+
+  const todayOccurrences = getOccurrencesForDate(schedule, now, settings);
+  const current = findCurrentOccurrence(todayOccurrences, now);
+  const justEnded = current ? undefined : findJustEnded(todayOccurrences, now);
+  const justEndedKey = justEnded ? occurrenceKey(justEnded) : null;
+
+  useEffect(() => {
+    if (!justEndedKey || celebratedClasses.has(justEndedKey)) return;
+    celebratedClasses.add(justEndedKey);
+    burstConfetti();
+  }, [justEndedKey]);
 
   if (schedule.courses.length === 0) {
     return (
@@ -63,11 +118,16 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     );
   }
 
-  const todayOccurrences = getOccurrencesForDate(schedule, now, settings);
-  const current = findCurrentOccurrence(todayOccurrences, now);
   const next = getNextOccurrence(schedule, now, settings);
   const todayLabel = now.toLocaleDateString("zh-TW", { month: "long", day: "numeric", weekday: "long" });
   const upcomingEvents = getUpcomingEvents(schedule, now);
+  const semester = getSemesterStatus(settings, now);
+  const holiday = getHolidayCountdown(schedule, now);
+  const msUntilEnd = current ? current.endAt.getTime() - now.getTime() : 0;
+
+  const stripCardClass =
+    "min-w-0 flex-1 rounded-2xl border-2 border-ink/10 bg-white p-3.5 text-ink dark:border-white/10 dark:bg-white/5 dark:text-white";
+  const stripLabelClass = "text-xs font-black text-ink/60 dark:text-white/60";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
@@ -76,22 +136,89 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">{todayLabel}</p>
       </header>
 
+      {(semester || holiday) && (
+        <div className="flex gap-3">
+          {semester?.kind === "before" && (
+            <div className={stripCardClass}>
+              <p className={stripLabelClass}>開學倒數</p>
+              <p className="mt-1 text-lg font-black">
+                {semester.daysUntilStart === 1 ? "明天開學" : `還有 ${semester.daysUntilStart} 天`}
+              </p>
+            </div>
+          )}
+          {semester?.kind === "during" && (
+            <div className={stripCardClass}>
+              <p className={stripLabelClass}>學期進度</p>
+              <p className="mt-1 text-lg font-black">
+                第 {semester.week} 週
+                {semester.totalWeeks !== null && (
+                  <span className="text-xs font-bold text-ink/60 dark:text-white/60"> / 共 {semester.totalWeeks} 週</span>
+                )}
+              </p>
+              {semester.fraction !== null && (
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/10 dark:bg-white/15">
+                  <div
+                    className="h-full rounded-full bg-ink dark:bg-lime"
+                    style={{ width: `${Math.round(semester.fraction * 100)}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+          {holiday && (
+            <div className={stripCardClass}>
+              <p className={stripLabelClass}>{holiday.kind === "ongoing" ? "放假中" : "下次放假"}</p>
+              <p className="mt-1 truncate text-lg font-black">
+                {holiday.kind === "ongoing"
+                  ? holiday.name
+                  : holiday.days === 1
+                    ? "明天"
+                    : `還有 ${holiday.days} 天`}
+              </p>
+              <p className="mt-0.5 truncate text-xs font-bold text-ink/60 dark:text-white/60">
+                {holiday.kind === "ongoing"
+                  ? `放到 ${formatDateRange(holiday.endDate, holiday.endDate)}`
+                  : `${holiday.name} · ${formatDateRange(holiday.startDate, holiday.endDate)}`}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {current ? (
-        <div className="rounded-3xl bg-lime p-5 text-ink">
-          <p className="text-xs font-black tracking-wide uppercase">現在上課中</p>
-          <p className="mt-1 text-2xl font-black">{current.course.name}</p>
-          <p className="mt-1 text-sm font-bold">
-            {current.timeSlot.startTime}–{current.timeSlot.endTime}
-            {current.course.location ? ` · ${current.course.location}` : ""}
-          </p>
-          {relevantNotes(current.course, current.startAt).map((text, index) => (
-            <p key={index} className="mt-2 text-sm font-bold">
-              備註:{text}
+        <div className="flex items-start justify-between gap-4 rounded-3xl bg-lime p-5 text-ink">
+          <div className="min-w-0">
+            <p className="text-xs font-black tracking-wide uppercase">現在上課中</p>
+            <p className="mt-1 text-2xl font-black">{current.course.name}</p>
+            <p className="mt-1 text-sm font-bold">
+              {current.timeSlot.startTime}–{current.timeSlot.endTime}
+              {current.course.location ? ` · ${current.course.location}` : ""}
             </p>
-          ))}
-          <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-lime">
-            還有 {formatDuration(current.endAt.getTime() - now.getTime())}下課
-          </p>
+            {relevantNotes(current.course, current.startAt).map((text, index) => (
+              <p key={index} className="mt-2 text-sm font-bold">
+                備註:{text}
+              </p>
+            ))}
+            <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-lime tabular-nums">
+              還有 {msUntilEnd <= FINAL_COUNTDOWN_MS ? `${formatCountdown(msUntilEnd)} ` : formatDuration(msUntilEnd)}下課
+            </p>
+          </div>
+          <ClassProgressRing
+            startAt={current.startAt}
+            endAt={current.endAt}
+            now={now}
+            finalCountdownMs={FINAL_COUNTDOWN_MS}
+          />
+        </div>
+      ) : justEnded ? (
+        <div className="class-end-pop rounded-3xl bg-lime p-5 text-ink">
+          <p className="text-xs font-black tracking-wide">{justEnded.course.name} 結束了</p>
+          <p className="mt-1 text-3xl font-black">下課啦！</p>
+          {next && (
+            <p className="mt-3 text-sm font-bold">
+              下一堂 · {formatOccurrenceDay(next, now)} {next.timeSlot.startTime} {next.course.name}
+            </p>
+          )}
         </div>
       ) : next ? (
         <div className="rounded-3xl bg-pink p-5 text-ink">

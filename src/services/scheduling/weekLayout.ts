@@ -54,7 +54,7 @@ export function formatMonthDay(date: Date): string {
   return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
-function weeksBetween(a: Date, b: Date): number {
+export function weeksBetween(a: Date, b: Date): number {
   const msPerWeek = 7 * 24 * 60 * 60 * 1000;
   return Math.round((b.getTime() - a.getTime()) / msPerWeek);
 }

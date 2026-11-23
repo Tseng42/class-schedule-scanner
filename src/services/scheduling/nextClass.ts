@@ -96,6 +96,12 @@ export function getNextOccurrence(schedule: Schedule, now: Date, settings: AppSe
   return null;
 }
 
+/** "4:59", for the last minutes before a class ends. */
+export function formatCountdown(ms: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
+}
+
 export function formatDuration(ms: number): string {
   const totalMinutes = Math.max(0, Math.round(ms / 60000));
   const days = Math.floor(totalMinutes / (60 * 24));
