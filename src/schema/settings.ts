@@ -17,6 +17,8 @@ export const appSettingsSchema = z.object({
   lineClassReminder: z.boolean().optional(),
   /** Share of a course's periods that, once missed, bars the final exam (扣考). Absent means a third. */
   attendanceLimit: z.enum(["third", "half", "none"]).optional(),
+  /** Color theme for the whole app (see lib/theme.ts). Absent means the original one. */
+  theme: z.enum(["original", "morandi", "ocean", "sunset", "candy"]).optional(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 

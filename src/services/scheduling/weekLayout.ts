@@ -7,8 +7,6 @@ import { listEvents } from "./events";
 
 export const DAY_ORDER: DayOfWeek[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 export const BLOCK_COLORS = ["bg-lime", "bg-pink", "bg-sky", "bg-mint"];
-/** Same palette as BLOCK_COLORS' Tailwind tokens, for contexts (like <canvas>) that can't use CSS classes. */
-export const BLOCK_COLOR_HEX = ["#d7f24c", "#ff8fc0", "#7fd6f5", "#b0f5c8"];
 
 export interface LaidOutOccurrence {
   occurrence: CourseOccurrence;

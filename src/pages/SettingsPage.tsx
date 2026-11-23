@@ -14,6 +14,8 @@ import { HolidayEditor } from "../components/HolidayEditor";
 import { LineReminderSettings } from "../components/LineReminderSettings";
 import { ReminderTimeSettings } from "../components/ReminderTimeSettings";
 import { SemesterSettings } from "../components/SemesterSettings";
+import { ThemeSettings } from "../components/ThemeSettings";
+import { applyTheme, findTheme } from "../lib/theme";
 import {
   ATTENDANCE_LIMIT_LABELS,
   formatReminderLead,
@@ -32,6 +34,7 @@ export type SettingsSection =
   | "semester"
   | "attendanceLimit"
   | "holidays"
+  | "theme"
   | "calendar"
   | "sync"
   | "backup"
@@ -78,12 +81,16 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
       saveSettings(next);
       return next;
     });
-    if (saved) setSettings(saved);
+    if (saved) {
+      setSettings(saved);
+      applyTheme(saved.theme);
+    }
   };
 
   const handleRestored = (restoredSchedule: Schedule, restoredSettings: AppSettings) => {
     setSchedule(restoredSchedule);
     setSettings(restoredSettings);
+    applyTheme(restoredSettings.theme);
   };
 
   const groups: SettingsGroup[] = [
@@ -121,6 +128,11 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
         },
         { section: "calendar", title: "匯出到手機行事曆" },
       ],
+    },
+    {
+      title: "外觀",
+      colorClass: "bg-lime",
+      rows: [{ section: "theme", title: "配色", status: findTheme(settings.theme).name }],
     },
     {
       title: "帳號與資料",
@@ -175,6 +187,7 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
           {activeRow.section === "attendanceLimit" && (
             <AttendanceLimitSettings settings={settings} onChange={handleSettingsChange} />
           )}
+          {activeRow.section === "theme" && <ThemeSettings settings={settings} onChange={handleSettingsChange} />}
           {activeRow.section === "holidays" && (
             <HolidayEditor
               holidays={schedule.holidays ?? []}

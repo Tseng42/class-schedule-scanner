@@ -1,7 +1,8 @@
 import { DAY_OF_WEEK_LABELS } from "../../schema/course";
 import type { Schedule } from "../../schema/schedule";
 import type { AppSettings } from "../../schema/settings";
-import { buildWeekLayout, formatMonthDay, BLOCK_COLOR_HEX } from "../scheduling/weekLayout";
+import { buildWeekLayout, formatMonthDay } from "../scheduling/weekLayout";
+import { accentHex } from "../../lib/theme";
 
 const SCALE = 2;
 const WIDTH = 1080;
@@ -22,7 +23,6 @@ const COLORS = {
   inkFainter: "rgba(11,11,15,0.15)",
   inkFaintest: "rgba(11,11,15,0.08)",
   white: "#ffffff",
-  lime: "#d7f24c",
 };
 
 /** ctx.roundRect landed in all major engines a while ago, but fall back to a square rect just in case. */
@@ -70,6 +70,7 @@ export function renderScheduleCardCanvas(
   if (!ctx) throw new Error("這個瀏覽器不支援產生圖片");
   ctx.scale(SCALE, SCALE);
   ctx.textBaseline = "top";
+  const accents = accentHex();
 
   // Background
   ctx.fillStyle = COLORS.bg;
@@ -96,7 +97,7 @@ export function renderScheduleCardCanvas(
       roundedRectPath(ctx, centerX - pillWidth / 2, dayHeaderTop, pillWidth, 36, 18);
       ctx.fillStyle = COLORS.ink;
       ctx.fill();
-      ctx.fillStyle = COLORS.lime;
+      ctx.fillStyle = accents[0];
     } else {
       ctx.fillStyle = COLORS.ink;
     }
@@ -113,7 +114,7 @@ export function renderScheduleCardCanvas(
       ctx.font = `900 13px ${FONT}`;
       const labelWidth = ctx.measureText(label).width + 16;
       roundedRectPath(ctx, centerX - labelWidth / 2, dayHeaderTop + 64, labelWidth, 22, 11);
-      ctx.fillStyle = BLOCK_COLOR_HEX[3];
+      ctx.fillStyle = accents[3];
       ctx.fill();
       ctx.fillStyle = COLORS.ink;
       ctx.fillText(label, centerX, dayHeaderTop + 68);
@@ -173,7 +174,7 @@ export function renderScheduleCardCanvas(
       const blockY = gridTop + ((item.start - startHour * 60) / 60) * HOUR_HEIGHT + 2;
       const blockHeight = Math.max(34, ((item.end - item.start) / 60) * HOUR_HEIGHT - 4);
       const cancelled = occurrence.cancelledReason !== undefined;
-      const colorHex = BLOCK_COLOR_HEX[colorIndexByCourseId.get(occurrence.course.id) ?? 0];
+      const colorHex = accents[colorIndexByCourseId.get(occurrence.course.id) ?? 0];
 
       roundedRectPath(ctx, blockX, blockY, blockWidth, blockHeight, 10);
       ctx.fillStyle = cancelled ? "rgba(11,11,15,0.05)" : colorHex;

@@ -4,6 +4,7 @@ import { scheduleSchema, type Schedule } from "../../schema/schedule";
 import { appSettingsSchema, type AppSettings } from "../../schema/settings";
 import { applySyncedSchedule, loadSchedule } from "../storage/scheduleRepository";
 import { loadSettings, replaceSettings } from "../storage/settingsRepository";
+import { applyTheme } from "../../lib/theme";
 import { db, isSyncConfigured } from "./firebaseConfig";
 import { getCurrentUser } from "./googleAuth";
 import { mergeSchedules, type MergeResult } from "./mergeSchedule";
@@ -90,7 +91,7 @@ export async function syncNow(): Promise<SyncResult> {
 
   // Merged again with whatever is stored now, in case the schedule was edited during the round-trip.
   applySyncedSchedule(mergeSchedules(loadSchedule(), outcome.schedule, { reconcileLegacy: false }).schedule);
-  if (outcome.settingsPulled) replaceSettings(outcome.settings);
+  if (outcome.settingsPulled) applyTheme(replaceSettings(outcome.settings).theme);
   updateSyncMeta({
     lastReconcileAt: now,
     lastKnownCloudSettingsUpdatedAt: now,

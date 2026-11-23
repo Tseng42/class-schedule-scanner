@@ -1,17 +1,20 @@
-const COLORS = ["#d7f24c", "#ff8fc0", "#7fd6f5", "#b0f5c8", "#0b0b0f"];
+import { accentHex } from "./theme";
+
+const INK = "#0b0b0f";
 
 /** A one-off confetti burst from the top of the screen. No-ops under reduced-motion. */
 export function burstConfetti(pieceCount = 60): void {
   if (typeof window === "undefined") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+  const colors = [...accentHex(), INK];
   const container = document.createElement("div");
   container.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;";
   document.body.appendChild(container);
 
   for (let i = 0; i < pieceCount; i++) {
     const piece = document.createElement("span");
-    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const color = colors[Math.floor(Math.random() * colors.length)];
     const startX = Math.random() * 100;
     const drift = (Math.random() * 2 - 1) * 24;
     const width = 6 + Math.random() * 6;
