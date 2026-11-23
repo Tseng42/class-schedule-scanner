@@ -4,7 +4,6 @@ import { loadSettings } from "../services/storage/settingsRepository";
 import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
-import { WeeklyWorkloadChart } from "../components/WeeklyWorkloadChart";
 import { EVENT_KIND_LABELS, type Course } from "../schema/course";
 import { daysUntil, formatDaysUntil, getUpcomingEvents } from "../services/scheduling/events";
 import { toDateKey } from "../services/scheduling/dateKey";
@@ -147,8 +146,6 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
           </ul>
         </section>
       )}
-
-      <WeeklyWorkloadChart schedule={schedule} settings={settings} today={now} />
 
       <WeeklyTimetable schedule={schedule} today={now} settings={settings} />
     </main>
