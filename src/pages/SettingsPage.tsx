@@ -6,6 +6,7 @@ import { loadSettings, saveSettings } from "../services/storage/settingsReposito
 import { hasActiveStoredApiKey } from "../services/ai";
 import { ApiKeySettings } from "../components/ApiKeySettings";
 import { AttendanceLimitSettings } from "../components/AttendanceLimitSettings";
+import { BackgroundPhotoSettings } from "../components/BackgroundPhotoSettings";
 import { BackupRestore } from "../components/BackupRestore";
 import { BrowserNotificationSettings } from "../components/BrowserNotificationSettings";
 import { CalendarExportSettings } from "../components/CalendarExportSettings";
@@ -24,6 +25,7 @@ import {
 } from "../lib/settingsStatus";
 import { isSyncConfigured } from "../services/sync/firebaseConfig";
 import { getCurrentUser, onAuthStateChange } from "../services/sync/googleAuth";
+import { hasBackgroundPhoto } from "../services/storage/backgroundPhoto";
 import type { Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
 
@@ -35,6 +37,7 @@ export type SettingsSection =
   | "attendanceLimit"
   | "holidays"
   | "theme"
+  | "photo"
   | "calendar"
   | "sync"
   | "backup"
@@ -63,8 +66,19 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
   const [settings, setSettings] = useState(() => loadSettings());
   const [storageError, setStorageError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(() => getCurrentUser());
+  const [hasPhoto, setHasPhoto] = useState<boolean | null>(null);
 
   useEffect(() => onAuthStateChange(setUser), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void hasBackgroundPhoto().then((value) => {
+      if (!cancelled) setHasPhoto(value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const withStorageErrorHandling = <T,>(action: () => T): T | undefined => {
     try {
@@ -132,7 +146,14 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
     {
       title: "外觀",
       colorClass: "bg-lime",
-      rows: [{ section: "theme", title: "配色", status: findTheme(settings.theme).name }],
+      rows: [
+        { section: "theme", title: "配色", status: findTheme(settings.theme).name },
+        {
+          section: "photo",
+          title: "課表背景照片",
+          status: hasPhoto === null ? undefined : hasPhoto ? "已設定" : "尚未設定",
+        },
+      ],
     },
     {
       title: "帳號與資料",
@@ -188,6 +209,7 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
             <AttendanceLimitSettings settings={settings} onChange={handleSettingsChange} />
           )}
           {activeRow.section === "theme" && <ThemeSettings settings={settings} onChange={handleSettingsChange} />}
+          {activeRow.section === "photo" && <BackgroundPhotoSettings onChange={setHasPhoto} />}
           {activeRow.section === "holidays" && (
             <HolidayEditor
               holidays={schedule.holidays ?? []}

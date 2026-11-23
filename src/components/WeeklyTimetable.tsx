@@ -12,6 +12,7 @@ import {
 } from "../services/scheduling/attendance";
 import type { CourseOccurrence } from "../services/scheduling/nextClass";
 import { AttendanceSheet } from "./AttendanceSheet";
+import { useBackgroundPhotoUrl } from "../hooks/useBackgroundPhotoUrl";
 
 const HOUR_HEIGHT = 56;
 const GUTTER_WIDTH = 40;
@@ -31,6 +32,9 @@ export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkA
   const [marking, setMarking] = useState<CourseOccurrence | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
+  const photoUrl = useBackgroundPhotoUrl();
+  // Over a photo, faded labels could land on a busy patch, so they go solid.
+  const subtleText = photoUrl ? "text-ink dark:text-white" : "text-ink/60 dark:text-white/60";
 
   const { columns, startHour, hours, colorIndexByCourseId, rangeLabel, semesterWeekLabel } = buildWeekLayout(
     schedule,
@@ -91,9 +95,22 @@ export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkA
       {shareError && <p className="text-xs font-bold text-red-700 dark:text-pink">{shareError}</p>}
 
       <div className="overflow-x-auto rounded-3xl border-2 border-ink bg-white dark:border-white/20 dark:bg-white/5">
-        <div style={{ minWidth: GUTTER_WIDTH + columns.length * MIN_COLUMN_WIDTH }}>
+        <div className="relative" style={{ minWidth: GUTTER_WIDTH + columns.length * MIN_COLUMN_WIDTH }}>
+          {photoUrl && (
+            <>
+              <img
+                src={photoUrl}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="pointer-events-none absolute inset-0 size-full object-cover"
+              />
+              {/* Veil so labels and grid lines read over any photo; deeper in dark mode. */}
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-white/70 dark:bg-ink/75" />
+            </>
+          )}
           <div
-            className="grid border-b-2 border-ink/10 dark:border-white/10"
+            className="relative grid border-b-2 border-ink/10 dark:border-white/10"
             style={{ gridTemplateColumns }}
           >
             <div />
@@ -106,7 +123,7 @@ export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkA
                 >
                   {DAY_OF_WEEK_LABELS[column.day]}
                 </p>
-                <p className="mt-0.5 text-[10px] font-bold text-ink/60 dark:text-white/60">
+                <p className={`mt-0.5 text-[10px] font-bold ${subtleText}`}>
                   {formatMonthDay(column.date)}
                 </p>
                 {column.holidayName && (
@@ -123,12 +140,12 @@ export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkA
             ))}
           </div>
 
-          <div className="grid" style={{ gridTemplateColumns }}>
+          <div className="relative grid" style={{ gridTemplateColumns }}>
             <div className="relative" style={{ height: totalHeight }}>
               {hours.map((hour, index) => (
                 <span
                   key={hour}
-                  className="absolute right-1 text-[10px] font-bold text-ink/60 dark:text-white/60"
+                  className={`absolute right-1 text-[10px] font-bold ${subtleText}`}
                   style={{ top: index * HOUR_HEIGHT + 2 }}
                 >
                   {String(hour).padStart(2, "0")}:00
@@ -160,7 +177,9 @@ export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkA
                   const reason = occurrence.cancelledReason;
                   const blockClass = `absolute overflow-hidden rounded-lg border-2 p-1 text-ink ${
                     reason !== undefined
-                      ? "border-dashed border-ink/30 bg-ink/5 dark:border-white/30 dark:bg-white/10 dark:text-white"
+                      ? `border-dashed border-ink/30 dark:border-white/30 dark:text-white ${
+                          photoUrl ? "bg-white dark:bg-ink" : "bg-ink/5 dark:bg-white/10"
+                        }`
                       : `border-ink dark:border-white/30 ${color}`
                   }`;
                   const blockStyle = {
