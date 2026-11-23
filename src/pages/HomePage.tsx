@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
-import { loadSchedule } from "../services/storage/scheduleRepository";
+import { useEffect, useMemo, useState } from "react";
+import { loadSchedule, setAttendance } from "../services/storage/scheduleRepository";
 import { loadSettings } from "../services/storage/settingsRepository";
 import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
+import { AttendancePrompt } from "../components/AttendancePrompt";
 import { ClassProgressRing } from "../components/ClassProgressRing";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
 import { burstConfetti } from "../lib/confetti";
 import { formatDateRange } from "../lib/formatDate";
 import { EVENT_KIND_LABELS, type Course } from "../schema/course";
-import type { Schedule } from "../schema/schedule";
+import type { AttendanceStatus, Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
 import { daysUntil, formatDaysUntil, getUpcomingEvents } from "../services/scheduling/events";
 import { toDateKey } from "../services/scheduling/dateKey";
@@ -22,6 +23,7 @@ import {
   type CourseOccurrence,
 } from "../services/scheduling/nextClass";
 import { getHolidayCountdown, getSemesterStatus } from "../services/scheduling/semester";
+import { attendanceKey, listCoursesNearLimit, listUnmarkedClasses } from "../services/scheduling/attendance";
 
 /** The last stretch of a class, when the countdown ticks every second. */
 const FINAL_COUNTDOWN_MS = 5 * 60 * 1000;
@@ -77,8 +79,9 @@ function isNotificationGranted(): boolean {
 }
 
 export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
-  const [schedule] = useState(() => loadSchedule());
+  const [schedule, setSchedule] = useState(() => loadSchedule());
   const [settings] = useState(() => loadSettings());
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
   const now = useNow((at) => nextScreenChange(schedule, settings, at));
 
   useClassReminders(schedule, settings, isNotificationGranted());
@@ -93,6 +96,27 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     celebratedClasses.add(justEndedKey);
     burstConfetti();
   }, [justEndedKey]);
+
+  // Scanning the whole semester is cheap but not free, and `now` ticks every second near the end of a class.
+  const minute = Math.floor(now.getTime() / 60000);
+  const unmarked = useMemo(
+    () => listUnmarkedClasses(schedule, settings, new Date(minute * 60000)),
+    [schedule, settings, minute],
+  );
+  const dateKey = toDateKey(now);
+  const nearLimit = useMemo(
+    () => listCoursesNearLimit(schedule, settings, new Date(`${dateKey}T12:00:00`)),
+    [schedule, settings, dateKey],
+  );
+
+  const handleMark = (occurrence: CourseOccurrence, status: AttendanceStatus) => {
+    try {
+      setSchedule(setAttendance(attendanceKey(occurrence), status));
+      setAttendanceError(null);
+    } catch (error) {
+      setAttendanceError(error instanceof Error ? error.message : "儲存失敗");
+    }
+  };
 
   if (schedule.courses.length === 0) {
     return (
@@ -135,6 +159,27 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">課表</h1>
         <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">{todayLabel}</p>
       </header>
+
+      {nearLimit.length > 0 && (
+        <section className="rounded-3xl border-2 border-ink bg-white p-4 text-ink dark:border-pink dark:bg-white/5 dark:text-white">
+          <h2 className="text-sm font-black">快到扣考線了</h2>
+          <ul className="mt-2 flex flex-col gap-1">
+            {nearLimit.map(({ course, summary }) => (
+              <li key={course.id} className="text-sm font-bold text-red-700 dark:text-pink">
+                {course.name}:
+                {summary.remainingPeriods! < 0
+                  ? `已缺 ${summary.missedPeriods} 節,達到扣考線(${summary.limitPeriods} 節)`
+                  : summary.remainingPeriods === 0
+                    ? `再缺 1 節就扣考(已缺 ${summary.missedPeriods} 節)`
+                    : `還能缺 ${summary.remainingPeriods} 節(已缺 ${summary.missedPeriods} 節)`}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs font-bold text-ink/60 dark:text-white/60">依你記的出缺席估算,實際以學校紀錄為準。</p>
+        </section>
+      )}
+
+      <AttendancePrompt unmarked={unmarked} now={now} onMark={handleMark} error={attendanceError} />
 
       {current ? (
         <div className="flex items-start justify-between gap-4 rounded-3xl bg-lime p-5 text-ink">
@@ -225,7 +270,13 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         </section>
       )}
 
-      <WeeklyTimetable schedule={schedule} today={now} settings={settings} />
+      <WeeklyTimetable
+        schedule={schedule}
+        today={now}
+        settings={settings}
+        attendance={schedule.attendance}
+        onMarkAttendance={handleMark}
+      />
 
       {(semester || holiday) && (
         <div className="flex gap-3">

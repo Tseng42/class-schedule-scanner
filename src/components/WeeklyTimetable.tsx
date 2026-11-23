@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { DAY_OF_WEEK_LABELS } from "../schema/course";
-import type { Schedule } from "../schema/schedule";
+import type { AttendanceRecord, AttendanceStatus, Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
 import { buildWeekLayout, formatMonthDay, BLOCK_COLORS } from "../services/scheduling/weekLayout";
 import { shareScheduleCard } from "../services/share/scheduleCard";
+import {
+  ATTENDANCE_BADGES,
+  ATTENDANCE_LABELS,
+  attendanceKey,
+  describeMeeting,
+} from "../services/scheduling/attendance";
+import type { CourseOccurrence } from "../services/scheduling/nextClass";
+import { AttendanceSheet } from "./AttendanceSheet";
 
 const HOUR_HEIGHT = 56;
 const GUTTER_WIDTH = 40;
@@ -13,10 +21,14 @@ interface WeeklyTimetableProps {
   schedule: Schedule;
   today: Date;
   settings: AppSettings;
+  attendance?: Record<string, AttendanceRecord>;
+  /** When set, classes that have started can be tapped to mark attendance. */
+  onMarkAttendance?: (occurrence: CourseOccurrence, status: AttendanceStatus) => void;
 }
 
-export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetableProps) {
+export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkAttendance }: WeeklyTimetableProps) {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [marking, setMarking] = useState<CourseOccurrence | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
 
@@ -146,21 +158,22 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
                   const height = Math.max(20, ((item.end - item.start) / 60) * HOUR_HEIGHT - 2);
                   const color = BLOCK_COLORS[colorIndexByCourseId.get(occurrence.course.id) ?? 0];
                   const reason = occurrence.cancelledReason;
-                  return (
-                    <div
-                      key={occurrence.timeSlot.id}
-                      className={`absolute overflow-hidden rounded-lg border-2 p-1 text-ink ${
-                        reason !== undefined
-                          ? "border-dashed border-ink/30 bg-ink/5 dark:border-white/30 dark:bg-white/10 dark:text-white"
-                          : `border-ink dark:border-white/30 ${color}`
-                      }`}
-                      style={{
-                        top,
-                        height,
-                        left: `${(item.lane / item.lanes) * 100}%`,
-                        width: `${100 / item.lanes}%`,
-                      }}
-                    >
+                  const blockClass = `absolute overflow-hidden rounded-lg border-2 p-1 text-ink ${
+                    reason !== undefined
+                      ? "border-dashed border-ink/30 bg-ink/5 dark:border-white/30 dark:bg-white/10 dark:text-white"
+                      : `border-ink dark:border-white/30 ${color}`
+                  }`;
+                  const blockStyle = {
+                    top,
+                    height,
+                    left: `${(item.lane / item.lanes) * 100}%`,
+                    width: `${100 / item.lanes}%`,
+                  };
+                  const canMark = reason === undefined && onMarkAttendance !== undefined && occurrence.startAt <= today;
+                  const record = attendance?.[attendanceKey(occurrence)];
+                  const isUnmarked = canMark && !record && occurrence.endAt <= today;
+                  const content = (
+                    <>
                       <p className={`text-[11px] leading-tight font-black ${reason !== undefined ? "line-through opacity-60" : ""}`}>
                         {occurrence.course.name}
                         {occurrence.course.recurrence.type === "once" ? " · 補課" : ""}
@@ -175,7 +188,38 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
                           {occurrence.course.location}
                         </p>
                       )}
-                    </div>
+                      {canMark && (record || isUnmarked) && (
+                        <span
+                          aria-hidden="true"
+                          className={`absolute right-0.5 bottom-0.5 grid size-4 place-items-center rounded-full text-[9px] leading-none font-black ${
+                            record ? "bg-ink text-white" : "border border-ink bg-white text-ink"
+                          }`}
+                        >
+                          {record ? ATTENDANCE_BADGES[record.status] : "?"}
+                        </span>
+                      )}
+                    </>
+                  );
+                  if (!canMark) {
+                    return (
+                      <div key={occurrence.timeSlot.id} className={blockClass} style={blockStyle}>
+                        {content}
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={occurrence.timeSlot.id}
+                      type="button"
+                      onClick={() => setMarking(occurrence)}
+                      aria-label={`${occurrence.course.name} ${describeMeeting(occurrence, today)},${
+                        record ? `記為${ATTENDANCE_LABELS[record.status]}` : "還沒點名"
+                      },點一下記出缺席`}
+                      className={`${blockClass} flex flex-col items-start justify-start text-left transition-transform active:scale-95`}
+                      style={blockStyle}
+                    >
+                      {content}
+                    </button>
                   );
                 })}
 
@@ -192,6 +236,19 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
           </div>
         </div>
       </div>
+
+      {marking && onMarkAttendance && (
+        <AttendanceSheet
+          occurrence={marking}
+          status={attendance?.[attendanceKey(marking)]?.status}
+          now={today}
+          onSelect={(status) => {
+            onMarkAttendance(marking, status);
+            setMarking(null);
+          }}
+          onClose={() => setMarking(null)}
+        />
+      )}
     </section>
   );
 }

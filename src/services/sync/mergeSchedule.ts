@@ -145,6 +145,17 @@ function mergeHolidays(local: Holiday[], cloud: Holiday[], tombstones: Tombstone
   });
 }
 
+/** Per class meeting, the later mark wins; on a tie, the cloud's. */
+function mergeAttendance(local: Schedule["attendance"], cloud: Schedule["attendance"]): Schedule["attendance"] {
+  if (!local && !cloud) return undefined;
+  const merged = { ...cloud };
+  for (const [key, record] of Object.entries(local ?? {})) {
+    const existing = merged[key];
+    if (!existing || record.updatedAt > existing.updatedAt) merged[key] = record;
+  }
+  return merged;
+}
+
 /**
  * Combines this device's schedule with the cloud copy, record by record:
  * every course and holiday either side has is kept, the later edit of a
@@ -162,6 +173,8 @@ export function mergeSchedules(local: Schedule, cloud: Schedule, options: MergeO
   if (holidays.length > 0 || local.holidays || cloud.holidays) schedule.holidays = holidays;
   if (Object.keys(deletedCourses).length > 0) schedule.deletedCourses = deletedCourses;
   if (Object.keys(deletedHolidays).length > 0) schedule.deletedHolidays = deletedHolidays;
+  const attendance = mergeAttendance(local.attendance, cloud.attendance);
+  if (attendance) schedule.attendance = attendance;
 
   const localCourseIds = new Set(local.courses.map((course) => course.id));
   const resultCourseIds = new Set(courses.map((course) => course.id));

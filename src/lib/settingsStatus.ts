@@ -31,6 +31,12 @@ export function formatReminderLead(totalMinutes: number): string {
   return `${value} ${UNIT_LABELS[unit]}`;
 }
 
+export const ATTENDANCE_LIMIT_LABELS: Record<NonNullable<AppSettings["attendanceLimit"]>, string> = {
+  third: "三分之一",
+  half: "二分之一",
+  none: "不算扣考",
+};
+
 /** The semester as shown on the settings list. */
 export function formatSemesterRange({ semesterStartDate, semesterEndDate }: AppSettings): string {
   if (semesterStartDate && semesterEndDate) return formatDateRange(semesterStartDate, semesterEndDate);

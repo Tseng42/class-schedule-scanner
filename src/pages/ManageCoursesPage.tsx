@@ -12,6 +12,22 @@ import { addCourses, loadSchedule, removeCourse, updateCourse } from "../service
 import { CourseDraftForm } from "../components/CourseDraftForm";
 import { CourseExtras } from "../components/CourseExtras";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { loadSettings } from "../services/storage/settingsRepository";
+import { summarizeAttendance, type AttendanceSummary } from "../services/scheduling/attendance";
+
+/** "已缺 3 節 · 還能缺 14 節(扣考線 18 節) · 遲到 2 次" */
+function describeAttendance(summary: AttendanceSummary): string {
+  const parts = [`已缺 ${summary.missedPeriods} 節`];
+  if (summary.remainingPeriods !== null && summary.limitPeriods !== null) {
+    parts.push(
+      summary.remainingPeriods < 0
+        ? `已達扣考線(${summary.limitPeriods} 節)`
+        : `還能缺 ${summary.remainingPeriods} 節(扣考線 ${summary.limitPeriods} 節)`,
+    );
+  }
+  if (summary.lateCount > 0) parts.push(`遲到 ${summary.lateCount} 次`);
+  return parts.join(" · ");
+}
 
 /** Stands in for editingId while the form is creating a course instead of editing one. */
 const NEW_COURSE_ID = "new";
@@ -35,6 +51,11 @@ function describeSchedule(course: Course): string {
 
 export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCoursesPageProps) {
   const [courses, setCourses] = useState<Course[]>(() => loadSchedule().courses);
+  // Attendance is marked on the home page, so a snapshot taken when this page opens is current.
+  const [attendanceContext] = useState(() => ({ schedule: loadSchedule(), settings: loadSettings() }));
+  const hasSemesterRange = Boolean(
+    attendanceContext.settings.semesterStartDate && attendanceContext.settings.semesterEndDate,
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CourseDraft | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -200,6 +221,25 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
                     刪除
                   </button>
                 </div>
+              </div>
+              <div className="mt-3 rounded-2xl bg-ink/5 px-3 py-2 dark:bg-white/10">
+                <p className="text-xs font-black text-ink dark:text-white">
+                  出缺席 ·{" "}
+                  <span className="font-bold">
+                    {describeAttendance(
+                      summarizeAttendance(
+                        { ...attendanceContext.schedule, courses },
+                        attendanceContext.settings,
+                        course,
+                      ),
+                    )}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[10px] font-bold text-ink/60 dark:text-white/60">
+                  {hasSemesterRange || attendanceContext.settings.attendanceLimit === "none"
+                    ? "依你在首頁記的估算,實際以學校紀錄為準"
+                    : "到「設定 › 學期範圍」填好開學和結束日,才算得出扣考線"}
+                </p>
               </div>
               <CourseExtras course={course} onChange={handleExtrasChange} />
             </div>

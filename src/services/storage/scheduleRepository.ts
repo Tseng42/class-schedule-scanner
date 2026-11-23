@@ -1,4 +1,10 @@
-import { createEmptySchedule, scheduleSchema, type Holiday, type Schedule } from "../../schema/schedule";
+import {
+  createEmptySchedule,
+  scheduleSchema,
+  type AttendanceStatus,
+  type Holiday,
+  type Schedule,
+} from "../../schema/schedule";
 import type { Course } from "../../schema/course";
 import { writeJSON } from "./persist";
 import { generateId } from "../../lib/id";
@@ -53,7 +59,24 @@ export function replaceSchedule(schedule: Schedule): Schedule {
   };
   if (Object.keys(deletedCourses).length > 0) updated.deletedCourses = deletedCourses;
   if (Object.keys(deletedHolidays).length > 0) updated.deletedHolidays = deletedHolidays;
+  if (restored.attendance) {
+    updated.attendance = Object.fromEntries(
+      Object.entries(restored.attendance).map(([key, record]) => [key, { ...record, updatedAt: at }]),
+    );
+  }
   persist(updated);
+  return updated;
+}
+
+/** Marks one class meeting (see attendanceKey) as attended, late, on leave or missed. */
+export function setAttendance(key: string, status: AttendanceStatus): Schedule {
+  const current = loadSchedule();
+  const updated: Schedule = {
+    ...current,
+    attendance: { ...current.attendance, [key]: { status, updatedAt: now() } },
+  };
+  persist(updated);
+  requestSync("schedule");
   return updated;
 }
 

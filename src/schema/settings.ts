@@ -15,6 +15,8 @@ export const appSettingsSchema = z.object({
   lineDailyTime: z.string().optional(),
   /** Reminds `reminderMinutes` before each class. */
   lineClassReminder: z.boolean().optional(),
+  /** Share of a course's periods that, once missed, bars the final exam (扣考). Absent means a third. */
+  attendanceLimit: z.enum(["third", "half", "none"]).optional(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 

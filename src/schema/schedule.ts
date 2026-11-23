@@ -12,6 +12,17 @@ export const holidaySchema = z.object({
 });
 export type Holiday = z.infer<typeof holidaySchema>;
 
+/** 公假 (official leave) doesn't count toward the 扣考 limit; 遲到 is only recorded. */
+export const attendanceStatusSchema = z.enum(["present", "late", "leave", "official", "absent"]);
+export type AttendanceStatus = z.infer<typeof attendanceStatusSchema>;
+
+export const attendanceRecordSchema = z.object({
+  status: attendanceStatusSchema,
+  /** When it was marked; the later mark wins when devices sync. */
+  updatedAt: z.string(),
+});
+export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;
+
 export const scheduleSchema = z.object({
   version: z.literal(1),
   courses: z.array(courseSchema),
@@ -23,6 +34,8 @@ export const scheduleSchema = z.object({
   deletedCourses: z.record(z.string(), z.string()).optional(),
   /** Deleted holiday date range (see holidayKey) → when. Keyed by range because holiday ids differ per device. */
   deletedHolidays: z.record(z.string(), z.string()).optional(),
+  /** One class meeting ("dateKey|courseId|slotId", see attendanceKey) → how it was marked. */
+  attendance: z.record(z.string(), attendanceRecordSchema).optional(),
 });
 export type Schedule = z.infer<typeof scheduleSchema>;
 

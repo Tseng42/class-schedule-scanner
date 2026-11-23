@@ -5,6 +5,7 @@ import { OFFICIAL_HOLIDAYS_TW_2026 } from "../data/officialHolidays";
 import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
 import { hasActiveStoredApiKey } from "../services/ai";
 import { ApiKeySettings } from "../components/ApiKeySettings";
+import { AttendanceLimitSettings } from "../components/AttendanceLimitSettings";
 import { BackupRestore } from "../components/BackupRestore";
 import { BrowserNotificationSettings } from "../components/BrowserNotificationSettings";
 import { CalendarExportSettings } from "../components/CalendarExportSettings";
@@ -13,7 +14,12 @@ import { HolidayEditor } from "../components/HolidayEditor";
 import { LineReminderSettings } from "../components/LineReminderSettings";
 import { ReminderTimeSettings } from "../components/ReminderTimeSettings";
 import { SemesterSettings } from "../components/SemesterSettings";
-import { formatReminderLead, formatSemesterRange, notificationStatusLabel } from "../lib/settingsStatus";
+import {
+  ATTENDANCE_LIMIT_LABELS,
+  formatReminderLead,
+  formatSemesterRange,
+  notificationStatusLabel,
+} from "../lib/settingsStatus";
 import { isSyncConfigured } from "../services/sync/firebaseConfig";
 import { getCurrentUser, onAuthStateChange } from "../services/sync/googleAuth";
 import type { Schedule } from "../schema/schedule";
@@ -24,6 +30,7 @@ export type SettingsSection =
   | "line"
   | "notifications"
   | "semester"
+  | "attendanceLimit"
   | "holidays"
   | "calendar"
   | "sync"
@@ -103,6 +110,11 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
       rows: [
         { section: "semester", title: "學期範圍", status: formatSemesterRange(settings) },
         {
+          section: "attendanceLimit",
+          title: "扣考門檻",
+          status: ATTENDANCE_LIMIT_LABELS[settings.attendanceLimit ?? "third"],
+        },
+        {
           section: "holidays",
           title: "全校放假日",
           status: schedule.holidays?.length ? `${schedule.holidays.length} 筆` : "尚未新增",
@@ -159,6 +171,9 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
           )}
           {activeRow.section === "semester" && (
             <SemesterSettings settings={settings} onChange={handleSettingsChange} />
+          )}
+          {activeRow.section === "attendanceLimit" && (
+            <AttendanceLimitSettings settings={settings} onChange={handleSettingsChange} />
           )}
           {activeRow.section === "holidays" && (
             <HolidayEditor
