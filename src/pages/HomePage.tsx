@@ -136,55 +136,6 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">{todayLabel}</p>
       </header>
 
-      {(semester || holiday) && (
-        <div className="flex gap-3">
-          {semester?.kind === "before" && (
-            <div className={stripCardClass}>
-              <p className={stripLabelClass}>開學倒數</p>
-              <p className="mt-1 text-lg font-black">
-                {semester.daysUntilStart === 1 ? "明天開學" : `還有 ${semester.daysUntilStart} 天`}
-              </p>
-            </div>
-          )}
-          {semester?.kind === "during" && (
-            <div className={stripCardClass}>
-              <p className={stripLabelClass}>學期進度</p>
-              <p className="mt-1 text-lg font-black">
-                第 {semester.week} 週
-                {semester.totalWeeks !== null && (
-                  <span className="text-xs font-bold text-ink/60 dark:text-white/60"> / 共 {semester.totalWeeks} 週</span>
-                )}
-              </p>
-              {semester.fraction !== null && (
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/10 dark:bg-white/15">
-                  <div
-                    className="h-full rounded-full bg-ink dark:bg-lime"
-                    style={{ width: `${Math.round(semester.fraction * 100)}%` }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          {holiday && (
-            <div className={stripCardClass}>
-              <p className={stripLabelClass}>{holiday.kind === "ongoing" ? "放假中" : "下次放假"}</p>
-              <p className="mt-1 truncate text-lg font-black">
-                {holiday.kind === "ongoing"
-                  ? holiday.name
-                  : holiday.days === 1
-                    ? "明天"
-                    : `還有 ${holiday.days} 天`}
-              </p>
-              <p className="mt-0.5 truncate text-xs font-bold text-ink/60 dark:text-white/60">
-                {holiday.kind === "ongoing"
-                  ? `放到 ${formatDateRange(holiday.endDate, holiday.endDate)}`
-                  : `${holiday.name} · ${formatDateRange(holiday.startDate, holiday.endDate)}`}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
       {current ? (
         <div className="flex items-start justify-between gap-4 rounded-3xl bg-lime p-5 text-ink">
           <div className="min-w-0">
@@ -275,6 +226,55 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
       )}
 
       <WeeklyTimetable schedule={schedule} today={now} settings={settings} />
+
+      {(semester || holiday) && (
+        <div className="flex gap-3">
+          {semester?.kind === "before" && (
+            <div className={stripCardClass}>
+              <p className={stripLabelClass}>開學倒數</p>
+              <p className="mt-1 text-lg font-black">
+                {semester.daysUntilStart === 1 ? "明天開學" : `還有 ${semester.daysUntilStart} 天`}
+              </p>
+            </div>
+          )}
+          {semester?.kind === "during" && (
+            <div className={stripCardClass}>
+              <p className={stripLabelClass}>學期進度</p>
+              <p className="mt-1 text-lg font-black">
+                第 {semester.week} 週
+                {semester.totalWeeks !== null && (
+                  <span className="text-xs font-bold text-ink/60 dark:text-white/60"> / 共 {semester.totalWeeks} 週</span>
+                )}
+              </p>
+              {semester.fraction !== null && (
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/10 dark:bg-white/15">
+                  <div
+                    className="h-full rounded-full bg-ink dark:bg-lime"
+                    style={{ width: `${Math.round(semester.fraction * 100)}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+          {holiday && (
+            <div className={stripCardClass}>
+              <p className={stripLabelClass}>{holiday.kind === "ongoing" ? "放假中" : "下次放假"}</p>
+              <p className="mt-1 truncate text-lg font-black">
+                {holiday.kind === "ongoing"
+                  ? holiday.name
+                  : holiday.days === 1
+                    ? "明天"
+                    : `還有 ${holiday.days} 天`}
+              </p>
+              <p className="mt-0.5 truncate text-xs font-bold text-ink/60 dark:text-white/60">
+                {holiday.kind === "ongoing"
+                  ? `放到 ${formatDateRange(holiday.endDate, holiday.endDate)}`
+                  : `${holiday.name} · ${formatDateRange(holiday.startDate, holiday.endDate)}`}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
