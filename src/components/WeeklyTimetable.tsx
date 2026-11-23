@@ -27,6 +27,9 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
     weekOffset,
   );
   const totalHeight = hours.length * HOUR_HEIGHT;
+  const nowMinutes = today.getHours() * 60 + today.getMinutes() + today.getSeconds() / 60;
+  const nowTop = ((nowMinutes - startHour * 60) / 60) * HOUR_HEIGHT;
+  const isNowInView = nowTop >= 0 && nowTop <= totalHeight;
   const gridTemplateColumns = `${GUTTER_WIDTH}px repeat(${columns.length}, minmax(0, 1fr))`;
 
   const navButtonClass =
@@ -175,6 +178,15 @@ export function WeeklyTimetable({ schedule, today, settings }: WeeklyTimetablePr
                     </div>
                   );
                 })}
+
+                {column.isToday && isNowInView && (
+                  // "Now" marker. In dark mode a lime line would vanish over lime course
+                  // blocks, so it gets a thin ink ring there.
+                  <div aria-hidden className="pointer-events-none absolute inset-x-0 z-10" style={{ top: nowTop - 1 }}>
+                    <div className="h-0.5 bg-ink dark:bg-lime dark:shadow-[0_0_0_1px_var(--color-ink)]" />
+                    <div className="absolute -top-[3px] -left-1 size-2 rounded-full bg-ink dark:bg-lime dark:shadow-[0_0_0_1px_var(--color-ink)]" />
+                  </div>
+                )}
               </div>
             ))}
           </div>
