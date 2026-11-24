@@ -19,6 +19,10 @@ export const appSettingsSchema = z.object({
   attendanceLimit: z.enum(["third", "half", "none"]).optional(),
   /** Color theme for the whole app (see lib/theme.ts). Absent means the original one. */
   theme: z.enum(["original", "morandi", "ocean", "sunset", "candy"]).optional(),
+  /** 專注計時 lengths last used, in minutes. Absent means 25 / 5 / 15. */
+  focusMinutes: z.number().int().positive().optional(),
+  breakMinutes: z.number().int().positive().optional(),
+  longBreakMinutes: z.number().int().positive().optional(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 

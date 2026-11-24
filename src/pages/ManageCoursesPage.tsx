@@ -14,6 +14,7 @@ import { CourseExtras } from "../components/CourseExtras";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { loadSettings } from "../services/storage/settingsRepository";
 import { summarizeAttendance, type AttendanceSummary } from "../services/scheduling/attendance";
+import { focusMinutesByCourse, focusSessionsBetween, formatFocusTime } from "../services/focus/focusTimer";
 
 /** "已缺 3 節 · 還能缺 14 節(扣考線 18 節) · 遲到 2 次" */
 function describeAttendance(summary: AttendanceSummary): string {
@@ -56,6 +57,8 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
   const hasSemesterRange = Boolean(
     attendanceContext.settings.semesterStartDate && attendanceContext.settings.semesterEndDate,
   );
+  // Focus time is logged on the home page too, so the same snapshot is current.
+  const [focusByCourse] = useState(() => focusMinutesByCourse(focusSessionsBetween(attendanceContext.schedule)));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CourseDraft | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -240,6 +243,11 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
                     ? "依你在首頁記的估算,實際以學校紀錄為準"
                     : "到「設定 › 學期範圍」填好開學和結束日,才算得出扣考線"}
                 </p>
+                {(focusByCourse.get(course.id) ?? 0) > 0 && (
+                  <p className="mt-1.5 border-t-2 border-ink/10 pt-1.5 text-xs font-black text-ink dark:border-white/10 dark:text-white">
+                    專注 · <span className="font-bold">共 {formatFocusTime(focusByCourse.get(course.id)!)}</span>
+                  </p>
+                )}
               </div>
               <CourseExtras course={course} onChange={handleExtrasChange} />
             </div>

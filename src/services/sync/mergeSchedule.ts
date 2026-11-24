@@ -156,6 +156,12 @@ function mergeAttendance(local: Schedule["attendance"], cloud: Schedule["attenda
   return merged;
 }
 
+/** Focus sessions are only ever added, so every one either side has is kept. */
+function mergeFocusSessions(local: Schedule["focusSessions"], cloud: Schedule["focusSessions"]): Schedule["focusSessions"] {
+  if (!local && !cloud) return undefined;
+  return { ...cloud, ...local };
+}
+
 /**
  * Combines this device's schedule with the cloud copy, record by record:
  * every course and holiday either side has is kept, the later edit of a
@@ -175,6 +181,8 @@ export function mergeSchedules(local: Schedule, cloud: Schedule, options: MergeO
   if (Object.keys(deletedHolidays).length > 0) schedule.deletedHolidays = deletedHolidays;
   const attendance = mergeAttendance(local.attendance, cloud.attendance);
   if (attendance) schedule.attendance = attendance;
+  const focusSessions = mergeFocusSessions(local.focusSessions, cloud.focusSessions);
+  if (focusSessions) schedule.focusSessions = focusSessions;
 
   const localCourseIds = new Set(local.courses.map((course) => course.id));
   const resultCourseIds = new Set(courses.map((course) => course.id));

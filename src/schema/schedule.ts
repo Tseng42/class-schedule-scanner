@@ -23,6 +23,15 @@ export const attendanceRecordSchema = z.object({
 });
 export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;
 
+/** One stretch of 專注計時. Never edited after it's logged, so syncing just keeps every one. */
+export const focusSessionSchema = z.object({
+  /** Absent when the timer wasn't tied to a course. */
+  courseId: z.string().optional(),
+  startedAt: z.string(),
+  minutes: z.number().int().positive(),
+});
+export type FocusSession = z.infer<typeof focusSessionSchema>;
+
 export const scheduleSchema = z.object({
   version: z.literal(1),
   courses: z.array(courseSchema),
@@ -36,6 +45,8 @@ export const scheduleSchema = z.object({
   deletedHolidays: z.record(z.string(), z.string()).optional(),
   /** One class meeting ("dateKey|courseId|slotId", see attendanceKey) → how it was marked. */
   attendance: z.record(z.string(), attendanceRecordSchema).optional(),
+  /** Session id (see focusSessionId) → the session. */
+  focusSessions: z.record(z.string(), focusSessionSchema).optional(),
 });
 export type Schedule = z.infer<typeof scheduleSchema>;
 

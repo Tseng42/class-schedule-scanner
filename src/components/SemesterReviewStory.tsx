@@ -196,6 +196,34 @@ function buildSlides(review: SemesterReview): Slide[] {
     });
   }
 
+  if (review.focusMinutes > 0) {
+    const hours = review.focusMinutes / 60;
+    slides.push({
+      key: "focus",
+      content: (
+        <>
+          <p className={kickerClass}>這學期你專注了</p>
+          <p className={bigClass}>
+            {review.focusMinutes < 60 ? (
+              <>
+                <CountUp value={review.focusMinutes} /> 分鐘
+              </>
+            ) : hours >= 10 ? (
+              <>
+                <CountUp value={Math.round(hours)} /> 小時
+              </>
+            ) : (
+              `${formatHours(review.focusMinutes)} 小時`
+            )}
+          </p>
+          <p className={subClass}>
+            {review.topFocusCourse ? `花最多時間的是${review.topFocusCourse}。` : "每一分鐘都算數。"}
+          </p>
+        </>
+      ),
+    });
+  }
+
   if (review.attendance) {
     const { attendedRate, lateCount, perfectCourses, marked } = review.attendance;
     const shownPerfect = perfectCourses.slice(0, 3).join("、");

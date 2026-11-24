@@ -1,6 +1,7 @@
 import type { DayOfWeek } from "../../schema/course";
 import type { AttendanceStatus, Schedule } from "../../schema/schedule";
 import type { AppSettings } from "../../schema/settings";
+import { focusMinutesByCourse, focusSessionsBetween, sumMinutes } from "../focus/focusTimer";
 import { attendanceOf, trackingStartKey } from "./attendance";
 import { parseDateKey, toDateKey } from "./dateKey";
 import { listEvents } from "./events";
@@ -56,6 +57,10 @@ export interface SemesterReview {
   assignmentDoneCount: number;
   /** Null when nothing has been marked. */
   attendance: AttendanceReview | null;
+  /** 專注計時 minutes logged over the same days. */
+  focusMinutes: number;
+  /** The course with the most focus time, if any session had one. */
+  topFocusCourse: string | null;
 }
 
 /**
@@ -140,6 +145,10 @@ export function buildSemesterReview(schedule: Schedule, settings: AppSettings, n
   }, null);
 
   const events = listEvents(schedule).filter((item) => item.event.date >= startKey && item.event.date <= endKey);
+  const focusSessions = focusSessionsBetween(schedule, startKey, endKey);
+  const topFocus = [...focusMinutesByCourse(focusSessions)]
+    .filter(([courseId]) => courseNames.has(courseId))
+    .sort((a, b) => b[1] - a[1])[0];
 
   return {
     startKey,
@@ -167,6 +176,8 @@ export function buildSemesterReview(schedule: Schedule, settings: AppSettings, n
               .filter((tally) => tally.meetings > 0 && tally.attended === tally.meetings)
               .map((tally) => tally.name),
           },
+    focusMinutes: sumMinutes(focusSessions),
+    topFocusCourse: topFocus ? (courseNames.get(topFocus[0]) ?? null) : null,
   };
 }
 

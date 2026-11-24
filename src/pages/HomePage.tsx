@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { loadSchedule, setAttendance, updateCourseEvent } from "../services/storage/scheduleRepository";
-import { loadSettings } from "../services/storage/settingsRepository";
+import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
 import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
+import { useFocusTimer } from "../hooks/useFocusTimer";
 import { AttendancePrompt } from "../components/AttendancePrompt";
 import { ClassProgressRing } from "../components/ClassProgressRing";
 import { SemesterReviewStory } from "../components/SemesterReviewStory";
 import { UpcomingEvents } from "../components/UpcomingEvents";
 import { ExamCountdown } from "../components/ExamCountdown";
 import { ExamPrepSheet } from "../components/ExamPrepSheet";
+import { FocusCard } from "../components/FocusCard";
+import { FocusSetupSheet } from "../components/FocusSetupSheet";
+import { FocusTimerOverlay } from "../components/FocusTimerOverlay";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
 import { burstConfetti } from "../lib/confetti";
 import { formatDateRange } from "../lib/formatDate";
@@ -34,6 +38,12 @@ import {
   trackingStartKey,
 } from "../services/scheduling/attendance";
 import { buildSemesterReview, isReviewSeason, type SemesterReview } from "../services/scheduling/semesterReview";
+import {
+  focusLengthsFrom,
+  focusSessionsBetween,
+  sumMinutes,
+  type FocusLengths,
+} from "../services/focus/focusTimer";
 
 /** The last stretch of a class, when the countdown ticks every second. */
 const FINAL_COUNTDOWN_MS = 5 * 60 * 1000;
@@ -110,6 +120,9 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const [prepFor, setPrepFor] = useState<{ courseId: string; eventId: string } | null>(null);
   const [openReview, setOpenReview] = useState<SemesterReview | null>(null);
   const [dismissedNudge, setDismissedNudge] = useState(readDismissedNudge);
+  const [focusSetupLengths, setFocusSetupLengths] = useState<FocusLengths | null>(null);
+  const [focusScreenOpen, setFocusScreenOpen] = useState(false);
+  const focus = useFocusTimer(setSchedule);
   const now = useNow((at) => nextScreenChange(schedule, settings, at));
 
   useClassReminders(schedule, settings, isNotificationGranted());
@@ -158,6 +171,44 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [openReview]);
+
+  // The full-screen timer is a history entry too: back hides it and the timer keeps going.
+  const openFocusScreen = () => {
+    window.history.pushState(null, "");
+    setFocusScreenOpen(true);
+  };
+  const minimizeFocusScreen = () => window.history.back();
+
+  useEffect(() => {
+    if (!focusScreenOpen) return;
+    const handlePopState = () => setFocusScreenOpen(false);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [focusScreenOpen]);
+
+  // The run ended (here, in another tab, or left too long): drop the screen's history entry with it.
+  useEffect(() => {
+    if (focusScreenOpen && !focus.run) window.history.back();
+  }, [focusScreenOpen, focus.run]);
+
+  const handleFocusStart = (lengths: FocusLengths, courseId: string | undefined) => {
+    setFocusSetupLengths(null);
+    const saved = loadSettings();
+    const before = focusLengthsFrom(saved);
+    if (
+      before.focusMinutes !== lengths.focusMinutes ||
+      before.breakMinutes !== lengths.breakMinutes ||
+      before.longBreakMinutes !== lengths.longBreakMinutes
+    ) {
+      try {
+        saveSettings({ ...saved, ...lengths });
+      } catch {
+        // Only means next time starts from the old lengths.
+      }
+    }
+    focus.start(lengths, courseId);
+    openFocusScreen();
+  };
 
   const dismissNudge = () => {
     const end = settings.semesterEndDate ?? "";
@@ -231,6 +282,10 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const semester = getSemesterStatus(settings, now);
   const holiday = getHolidayCountdown(schedule, now);
   const msUntilEnd = current ? current.endAt.getTime() - now.getTime() : 0;
+  const todayFocusMinutes = sumMinutes(focusSessionsBetween(schedule, dateKey, dateKey));
+  const focusCourseName = focus.run?.courseId
+    ? (schedule.courses.find((course) => course.id === focus.run?.courseId)?.name ?? null)
+    : null;
 
   const showNudge = hasReview && isReviewSeason(settings, now) && dismissedNudge !== settings.semesterEndDate;
   const showReviewCard = hasReview && semester?.kind !== "during";
@@ -348,6 +403,14 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         </div>
       )}
 
+      <FocusCard
+        run={focus.run}
+        courseName={focusCourseName}
+        todayMinutes={todayFocusMinutes}
+        onStart={() => setFocusSetupLengths(focusLengthsFrom(loadSettings()))}
+        onOpen={openFocusScreen}
+      />
+
       <ExamCountdown
         exams={examCountdown}
         now={now}
@@ -435,6 +498,24 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
           now={now}
           onChange={(checklist) => handlePrepChange(prepCourse.id, prepExam.id, checklist)}
           onClose={() => setPrepFor(null)}
+        />
+      )}
+      {focusSetupLengths && (
+        <FocusSetupSheet
+          courses={schedule.courses}
+          lengths={focusSetupLengths}
+          onStart={handleFocusStart}
+          onClose={() => setFocusSetupLengths(null)}
+        />
+      )}
+      {focusScreenOpen && focus.run && (
+        <FocusTimerOverlay
+          run={focus.run}
+          courseName={focusCourseName}
+          todayMinutes={todayFocusMinutes}
+          onEnd={focus.end}
+          onNext={focus.next}
+          onMinimize={minimizeFocusScreen}
         />
       )}
       {openReview && <SemesterReviewStory review={openReview} onClose={closeReview} />}

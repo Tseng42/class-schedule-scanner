@@ -2,6 +2,7 @@ import {
   createEmptySchedule,
   scheduleSchema,
   type AttendanceStatus,
+  type FocusSession,
   type Holiday,
   type Schedule,
 } from "../../schema/schedule";
@@ -64,7 +65,20 @@ export function replaceSchedule(schedule: Schedule): Schedule {
       Object.entries(restored.attendance).map(([key, record]) => [key, { ...record, updatedAt: at }]),
     );
   }
+  // Sessions are merged by keeping every one, so a restore can add them back but never remove any.
+  if (current.focusSessions || restored.focusSessions) {
+    updated.focusSessions = { ...current.focusSessions, ...restored.focusSessions };
+  }
   persist(updated);
+  return updated;
+}
+
+/** Logs a stretch of 專注計時. Logging the same id twice (two open tabs) keeps one. */
+export function addFocusSession(id: string, session: FocusSession): Schedule {
+  const current = loadSchedule();
+  const updated: Schedule = { ...current, focusSessions: { ...current.focusSessions, [id]: session } };
+  persist(updated);
+  requestSync("schedule");
   return updated;
 }
 
