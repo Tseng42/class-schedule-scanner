@@ -12,6 +12,7 @@ import {
 } from "../services/scheduling/attendance";
 import type { CourseOccurrence } from "../services/scheduling/nextClass";
 import { AttendanceSheet } from "./AttendanceSheet";
+import { collapseBack, expandFrom } from "../lib/expandTransition";
 import { RollingNumber } from "./RollingNumber";
 import { useBackgroundPhotoUrl } from "../hooks/useBackgroundPhotoUrl";
 
@@ -231,7 +232,7 @@ export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkA
                     <button
                       key={occurrence.timeSlot.id}
                       type="button"
-                      onClick={() => setMarking(occurrence)}
+                      onClick={(event) => expandFrom(event.currentTarget, () => setMarking(occurrence))}
                       aria-label={`${occurrence.course.name} ${describeMeeting(occurrence, today)},${
                         record ? `記為${ATTENDANCE_LABELS[record.status]}` : "還沒點名"
                       },點一下記出缺席`}
@@ -264,9 +265,9 @@ export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkA
           now={today}
           onSelect={(status) => {
             onMarkAttendance(marking, status);
-            setMarking(null);
+            collapseBack(() => setMarking(null));
           }}
-          onClose={() => setMarking(null)}
+          onClose={() => collapseBack(() => setMarking(null))}
         />
       )}
     </section>

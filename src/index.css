@@ -365,6 +365,59 @@ button.rounded-full.active\:scale-95:not(:disabled):active {
   border-radius: 0.75rem;
 }
 
+/* Container transform (see lib/expandTransition): the tapped card's box grows into
+   the opened panel's. Contents stay at their own size and are revealed by the
+   growing box, fading through: the card's out in the first third, the panel's in
+   after. --expand-ms is set for the length of each transition. */
+::view-transition-group(*),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--expand-ms, 250ms);
+}
+
+::view-transition-group(*) {
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+::view-transition-image-pair(expand) {
+  overflow: clip;
+}
+
+::view-transition-old(expand),
+::view-transition-new(expand) {
+  height: 100%;
+  object-fit: none;
+  object-position: top;
+}
+
+::view-transition-old(expand) {
+  animation: expand-fade-out calc(var(--expand-ms, 250ms) * 0.35) linear both;
+}
+
+::view-transition-new(expand) {
+  animation: expand-fade-in calc(var(--expand-ms, 250ms) * 0.65) calc(var(--expand-ms, 250ms) * 0.35) linear both;
+}
+
+@keyframes expand-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes expand-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .roll-in-up,
   .roll-in-down {

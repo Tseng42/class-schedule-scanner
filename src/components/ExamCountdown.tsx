@@ -10,7 +10,8 @@ import { RollingNumber } from "./RollingNumber";
 interface ExamCountdownProps {
   exams: ScheduledEvent[];
   now: Date;
-  onOpen: (item: ScheduledEvent) => void;
+  /** `source` is the tapped row, for the 複習清單 to grow out of. */
+  onOpen: (item: ScheduledEvent, source: HTMLElement) => void;
 }
 
 /** Home-screen card for exams in the next two weeks, each with how much of its 複習清單 is done. */
@@ -30,7 +31,7 @@ export function ExamCountdown({ exams, now, onOpen }: ExamCountdownProps) {
             <li key={event.id} className="border-t-2 border-ink/10 first:border-t-0 dark:border-white/10">
               <button
                 type="button"
-                onClick={() => onOpen(item)}
+                onClick={(event) => onOpen(item, event.currentTarget)}
                 className="flex w-full items-center gap-3 py-3 text-left"
               >
                 <span className="min-w-0 flex-1">

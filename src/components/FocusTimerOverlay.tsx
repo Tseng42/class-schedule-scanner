@@ -81,6 +81,7 @@ export function FocusTimerOverlay({ run, courseName, todayMinutes, onEnd, onNext
       role="dialog"
       aria-modal="true"
       aria-labelledby="focus-phase-label"
+      data-expand-target
       data-swipe-ignore
       className={`fixed inset-0 z-[60] flex flex-col overscroll-none ${surface} transition-colors duration-500 motion-reduce:transition-none`}
     >
@@ -120,7 +121,7 @@ export function FocusTimerOverlay({ run, courseName, todayMinutes, onEnd, onNext
           </svg>
           <div className="absolute inset-0 grid place-items-center">
             {counting ? (
-              <p className="text-[clamp(3rem,16vw,4.5rem)] leading-none font-black tabular-nums">
+              <p data-expand-share="clock" className="text-[clamp(3rem,16vw,4.5rem)] leading-none font-black tabular-nums">
                 <span className="sr-only">剩下 </span>
                 <RollingNumber value={formatClock(remaining)} direction="down" />
               </p>

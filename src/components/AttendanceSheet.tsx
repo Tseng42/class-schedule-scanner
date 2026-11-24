@@ -41,6 +41,7 @@ export function AttendanceSheet({ occurrence, status, now, onSelect, onClose }: 
     >
       <div
         ref={panelRef}
+        data-expand-target
         role="dialog"
         aria-modal="true"
         aria-labelledby="attendance-sheet-title"

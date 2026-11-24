@@ -55,6 +55,7 @@ export function ExamPrepSheet({ course, exam, now, onChange, onClose }: ExamPrep
     >
       <div
         ref={panelRef}
+        data-expand-target
         role="dialog"
         aria-modal="true"
         aria-labelledby="exam-prep-title"

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { LargeTitle } from "../components/LargeTitle";
+import { collapseBack, expandFrom, expandSourceOf } from "../lib/expandTransition";
 import { loadSchedule, setAttendance, updateCourseEvent } from "../services/storage/scheduleRepository";
 import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
 import { useNow } from "../hooks/useNow";
@@ -159,31 +160,36 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const hasReview = review !== null && review.classCount > 0;
 
   // The open review is a history entry, so Android back and swipe-back close it
-  // instead of leaving the app.
-  const showReview = () => {
+  // instead of leaving the app. It grows out of the card that was tapped.
+  const showReview = (event: { currentTarget: HTMLElement }) => {
     if (!review) return;
     window.history.pushState(null, "");
-    setOpenReview(review);
+    expandFrom(expandSourceOf(event.currentTarget), () => setOpenReview(review));
   };
   const closeReview = () => window.history.back();
 
   useEffect(() => {
     if (!openReview) return;
-    const handlePopState = () => setOpenReview(null);
+    const handlePopState = (event: PopStateEvent) => collapseBack(() => setOpenReview(null), event);
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [openReview]);
 
   // The full-screen timer is a history entry too: back hides it and the timer keeps going.
-  const openFocusScreen = () => {
+  // Opened from the running card, it grows out of it; right after the setup sheet, it just appears.
+  const openFocusScreen = (source?: HTMLElement) => {
     window.history.pushState(null, "");
-    setFocusScreenOpen(true);
+    expandFrom(source ?? null, () => setFocusScreenOpen(true));
   };
   const minimizeFocusScreen = () => window.history.back();
 
   useEffect(() => {
     if (!focusScreenOpen) return;
-    const handlePopState = () => setFocusScreenOpen(false);
+    // Opened straight from the setup sheet, it still shrinks into the card on the way out.
+    const handlePopState = (event: PopStateEvent) =>
+      collapseBack(() => setFocusScreenOpen(false), event, () =>
+        document.querySelector<HTMLElement>("button[data-focus-card]"),
+      );
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [focusScreenOpen]);
@@ -304,7 +310,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
       </header>
 
       {showNudge && review && (
-        <section className="flex items-center gap-2 rounded-3xl bg-sky py-3 pr-2 pl-4 text-ink">
+        <section data-expand-source className="flex items-center gap-2 rounded-3xl bg-sky py-3 pr-2 pl-4 text-ink">
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-black">{review.isFinished ? "學期回顧出爐了" : "學期快結束了,回顧出爐了"}</h2>
             <p className="mt-0.5 text-xs font-bold">上了幾堂課、撐過幾個早八</p>
@@ -421,7 +427,9 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
       <ExamCountdown
         exams={examCountdown}
         now={now}
-        onOpen={(item) => setPrepFor({ courseId: item.course.id, eventId: item.event.id })}
+        onOpen={(item, source) =>
+          expandFrom(source, () => setPrepFor({ courseId: item.course.id, eventId: item.event.id }))
+        }
       />
 
       <UpcomingEvents events={homeEvents} now={now} onToggleDone={handleToggleDone} error={eventError} />
@@ -445,7 +453,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
             </div>
           )}
           {semester?.kind === "during" && (
-            <div className={stripCardClass}>
+            <div data-expand-source className={stripCardClass}>
               <p className={stripLabelClass}>學期進度</p>
               <p className="mt-1 text-lg font-black">
                 第 {semester.week} 週
@@ -504,7 +512,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
           exam={prepExam}
           now={now}
           onChange={(checklist) => handlePrepChange(prepCourse.id, prepExam.id, checklist)}
-          onClose={() => setPrepFor(null)}
+          onClose={() => collapseBack(() => setPrepFor(null))}
         />
       )}
       {focusSetupLengths && (

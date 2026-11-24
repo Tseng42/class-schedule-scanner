@@ -7,7 +7,8 @@ interface FocusCardProps {
   courseName: string | null;
   todayMinutes: number;
   onStart: () => void;
-  onOpen: () => void;
+  /** `source` is the card, for the full-screen timer to grow out of. */
+  onOpen: (source: HTMLElement) => void;
 }
 
 /** The home screen's way into 專注計時: a start button, or the running timer at a glance. */
@@ -55,7 +56,7 @@ export function FocusCard({ run, courseName, todayMinutes, onStart, onOpen }: Fo
     <button
       type="button"
       data-focus-card
-      onClick={onOpen}
+      onClick={(event) => onOpen(event.currentTarget)}
       className={`flex w-full items-center gap-3 rounded-3xl py-3.5 pr-4 pl-4 text-left transition-transform active:scale-[0.99] ${surface}`}
     >
       <span className="min-w-0 flex-1">
@@ -67,7 +68,7 @@ export function FocusCard({ run, courseName, todayMinutes, onStart, onOpen }: Fo
         </span>
       </span>
       {endsAt !== null && (
-        <span className="shrink-0 text-2xl font-black tabular-nums">
+        <span data-expand-share="clock" className="shrink-0 text-2xl font-black tabular-nums">
           <RollingNumber value={formatClock(endsAt - now)} direction="down" />
         </span>
       )}

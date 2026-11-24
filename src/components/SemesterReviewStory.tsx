@@ -371,6 +371,7 @@ export function SemesterReviewStory({ review, onClose }: SemesterReviewStoryProp
       role="dialog"
       aria-modal="true"
       aria-label="學期回顧"
+      data-expand-target
       data-swipe-ignore
       className={`fixed inset-0 z-[60] flex flex-col overscroll-none ${background} text-ink transition-colors duration-300`}
     >
