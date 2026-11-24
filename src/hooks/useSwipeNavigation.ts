@@ -37,6 +37,23 @@ function dampen(dx: number): number {
   return Math.sign(dx) * (MAX_DRAG + overflow * 0.3);
 }
 
+/**
+ * Springs the content back after a swipe that didn't commit, then drops the inline
+ * transform. Any transform, even translateX(0), makes the content the containing
+ * block for the position: fixed sheets inside it, which then open relative to the
+ * whole page and drag the scroll position along when they take focus.
+ */
+function springBack(node: HTMLElement) {
+  node.style.transition = `transform ${SPRING_DURATION}ms ${SPRING_BACK}`;
+  node.style.transform = "translateX(0px)";
+  window.setTimeout(() => {
+    // Left alone if a new drag has moved it since.
+    if (node.style.transform !== "translateX(0px)") return;
+    node.style.transform = "";
+    node.style.transition = "";
+  }, SPRING_DURATION + 50);
+}
+
 export interface DragProgress {
   /** The same dampened, signed px offset applied to the dragged content. */
   dx: number;
@@ -126,8 +143,7 @@ export function useSwipeNavigation(
 
       const touch = event.changedTouches[0];
       if (!touch) {
-        node.style.transition = `transform ${SPRING_DURATION}ms ${SPRING_BACK}`;
-        node.style.transform = "translateX(0px)";
+        springBack(node);
         optionsRef.current.onDragProgress?.(null);
         return;
       }
@@ -150,8 +166,7 @@ export function useSwipeNavigation(
         node.style.transform = `translateX(${exitTo}px)`;
         window.setTimeout(() => optionsRef.current.onSwipe(direction), EXIT_DURATION);
       } else {
-        node.style.transition = `transform ${SPRING_DURATION}ms ${SPRING_BACK}`;
-        node.style.transform = "translateX(0px)";
+        springBack(node);
         optionsRef.current.onDragProgress?.(null);
       }
     };
