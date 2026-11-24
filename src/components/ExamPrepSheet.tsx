@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Course, CourseEvent, PrepItem } from "../schema/course";
 import { generateId } from "../lib/id";
 import { formatExamCountdown, prepProgress } from "../services/scheduling/events";
+import { tapHaptic } from "../lib/haptics";
+import { RollingNumber } from "./RollingNumber";
 
 /** Practice testing is one of the two study methods rated most effective (Dunlosky et al., 2013). */
 const PRACTICE_ITEM = "做考古題/練習題";
@@ -73,7 +75,7 @@ export function ExamPrepSheet({ course, exam, now, onChange, onClose }: ExamPrep
           <span>複習清單</span>
           {total > 0 && (
             <span className="tabular-nums">
-              {done}/{total}
+              <RollingNumber value={`${done}/${total}`} />
             </span>
           )}
         </div>
@@ -98,16 +100,19 @@ export function ExamPrepSheet({ course, exam, now, onChange, onClose }: ExamPrep
                   role="checkbox"
                   aria-checked={Boolean(item.done)}
                   aria-label={`${item.text}複習完了`}
-                  onClick={() =>
-                    onChange(items.map((other) => (other.id === item.id ? { ...other, done: !item.done || undefined } : other)))
-                  }
+                  onClick={() => {
+                    tapHaptic();
+                    onChange(items.map((other) => (other.id === item.id ? { ...other, done: !item.done || undefined } : other)));
+                  }}
                   className={`grid size-8 shrink-0 place-items-center rounded-lg border-2 text-sm font-black ${
                     item.done
                       ? "border-ink bg-ink text-lime dark:border-lime dark:bg-lime dark:text-ink"
                       : "border-ink bg-white text-transparent dark:border-white dark:bg-transparent"
                   }`}
                 >
-                  ✓
+                  <span className="check-mark" data-on={Boolean(item.done)}>
+                    ✓
+                  </span>
                 </button>
                 <span className={`min-w-0 flex-1 ${item.done ? "line-through opacity-60" : ""}`}>{item.text}</span>
                 <button

@@ -5,6 +5,7 @@ import {
   prepProgress,
   type ScheduledEvent,
 } from "../services/scheduling/events";
+import { RollingNumber } from "./RollingNumber";
 
 interface ExamCountdownProps {
   exams: ScheduledEvent[];
@@ -45,7 +46,7 @@ export function ExamCountdown({ exams, now, onOpen }: ExamCountdownProps) {
                             style={{ width: `${(done / total) * 100}%` }}
                           />
                         </span>
-                        已複習 {done}/{total}
+                        已複習 <RollingNumber value={`${done}/${total}`} className="tabular-nums" />
                       </>
                     ) : (
                       "還沒有複習清單,點一下加"
@@ -57,7 +58,7 @@ export function ExamCountdown({ exams, now, onOpen }: ExamCountdownProps) {
                     days <= 1 ? "bg-ink text-lime dark:bg-lime dark:text-ink" : "bg-ink/5 dark:bg-white/10"
                   }`}
                 >
-                  {formatExamCountdown(event, now)}
+                  <RollingNumber value={formatExamCountdown(event, now)} direction="down" className="tabular-nums" />
                   {event.time && days <= 1 ? ` ${event.time}` : ""}
                 </span>
                 <span aria-hidden="true" className="text-base leading-none font-black opacity-40">

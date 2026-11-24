@@ -9,6 +9,7 @@ import {
 } from "../schema/course";
 import { generateId } from "../lib/id";
 import { ExamPrepSheet } from "./ExamPrepSheet";
+import { tapHaptic } from "../lib/haptics";
 import { prepProgress } from "../services/scheduling/events";
 import { formatDateRange } from "../lib/formatDate";
 
@@ -241,12 +242,17 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
                       role="checkbox"
                       aria-checked={done}
                       aria-label={`${item.title}做完了`}
-                      onClick={() => patchEvent(item.id, { done: !done || undefined })}
+                      onClick={() => {
+                        tapHaptic();
+                        patchEvent(item.id, { done: !done || undefined });
+                      }}
                       className={`grid size-6 shrink-0 place-items-center rounded-md border-2 border-ink text-[11px] ${
                         done ? "bg-ink text-sky" : "bg-white text-transparent"
                       }`}
                     >
-                      ✓
+                      <span className="check-mark" data-on={done}>
+                        ✓
+                      </span>
                     </button>
                   ) : (
                     <span aria-hidden="true" className="w-1 shrink-0" />

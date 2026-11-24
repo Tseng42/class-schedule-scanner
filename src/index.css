@@ -215,3 +215,120 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Spring curves: a damped spring sampled into linear(), after Material 3
+   Expressive's motion physics. Bouncy = stiffness 800, damping 0.6 (about 9%
+   overshoot, settles in ~450ms); fast = stiffness 1400, damping 0.9 (~300ms).
+   Browsers without linear() fall back to the default ease. */
+:root {
+  --ease-spring-bouncy: linear(0, 0.075, 0.249, 0.458, 0.659, 0.827, 0.952, 1.034, 1.078, 1.094, 1.091, 1.076, 1.056, 1.037, 1.02, 1.007, 0.998, 0.993, 0.991, 0.991, 0.992, 0.994, 0.996, 0.998, 0.999, 1, 1.001, 1.001, 1.001, 1.001, 1);
+  --ease-spring-fast: linear(0, 0.056, 0.18, 0.325, 0.467, 0.594, 0.699, 0.783, 0.848, 0.896, 0.931, 0.956, 0.973, 0.984, 0.992, 0.996, 0.999, 1.001, 1.001, 1.002, 1.001, 1.001, 1.001, 1.001, 1.001, 1, 1, 1, 1, 1, 1);
+}
+
+/* Rolling digits (see RollingNumber): the new digit slides in as the old one
+   slides out, clipped to the digit's own box. */
+.roll-digit {
+  position: relative;
+  display: inline-block;
+  clip-path: inset(0);
+}
+
+.roll-digit > span {
+  display: inline-block;
+}
+
+.roll-in-up {
+  animation: roll-in-up 300ms var(--ease-spring-fast);
+}
+
+.roll-in-down {
+  animation: roll-in-down 300ms var(--ease-spring-fast);
+}
+
+.roll-digit > .roll-out-up,
+.roll-digit > .roll-out-down {
+  position: absolute;
+  inset: 0;
+  animation: roll-out-up 300ms var(--ease-spring-fast) forwards;
+}
+
+.roll-digit > .roll-out-down {
+  animation-name: roll-out-down;
+}
+
+@keyframes roll-in-up {
+  from {
+    transform: translateY(70%);
+    opacity: 0;
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes roll-in-down {
+  from {
+    transform: translateY(-70%);
+    opacity: 0;
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes roll-out-up {
+  to {
+    transform: translateY(-70%);
+    opacity: 0;
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes roll-out-down {
+  to {
+    transform: translateY(70%);
+    opacity: 0;
+    filter: blur(1.5px);
+  }
+}
+
+/* A checked box's tick springs into place. */
+.check-mark {
+  display: inline-block;
+  transition: scale 450ms var(--ease-spring-bouncy);
+}
+
+.check-mark[data-on="false"] {
+  scale: 0.3;
+}
+
+/* Material 3 Expressive's press morph: a pill button squares off a little while
+   pressed and springs back. Only buttons that already shrink on press. */
+button.rounded-full.active\:scale-95:not(:disabled) {
+  border-radius: 1.5rem;
+  transition:
+    transform 450ms var(--ease-spring-bouncy),
+    scale 450ms var(--ease-spring-bouncy),
+    border-radius 450ms var(--ease-spring-bouncy);
+}
+
+button.rounded-full.active\:scale-95:not(:disabled):active {
+  border-radius: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roll-in-up,
+  .roll-in-down {
+    animation: none;
+  }
+
+  .roll-digit > .roll-out-up,
+  .roll-digit > .roll-out-down {
+    display: none;
+  }
+
+  .check-mark,
+  button.rounded-full.active\:scale-95:not(:disabled) {
+    transition: none;
+  }
+
+  button.rounded-full.active\:scale-95:not(:disabled):active {
+    border-radius: 1.5rem;
+  }
+}

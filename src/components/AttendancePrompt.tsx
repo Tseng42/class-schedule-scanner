@@ -1,3 +1,4 @@
+import { RollingNumber } from "./RollingNumber";
 import { useState } from "react";
 import type { AttendanceStatus } from "../schema/schedule";
 import { attendanceKey, describeMeeting } from "../services/scheduling/attendance";
@@ -27,7 +28,7 @@ export function AttendancePrompt({ unmarked, now, onMark, error }: AttendancePro
     <section className="rounded-3xl border-2 border-ink/10 bg-white p-4 dark:border-white/10 dark:bg-white/5">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-sm font-black text-ink dark:text-white">還沒點名</h2>
-        <span className="text-xs font-bold text-ink/60 dark:text-white/60">{unmarked.length} 堂</span>
+        <span className="text-xs font-bold text-ink/60 dark:text-white/60"><RollingNumber value={`${unmarked.length} 堂`} /></span>
       </div>
 
       <ul className="mt-3 flex flex-col gap-4">
@@ -56,7 +57,7 @@ export function AttendancePrompt({ unmarked, now, onMark, error }: AttendancePro
           onClick={() => setVisibleCount((count) => count + SHOW_MORE_STEP)}
           className="mt-4 w-full rounded-full border-2 border-ink/15 py-2 text-xs font-black text-ink transition-transform active:scale-95 dark:border-white/15 dark:text-white"
         >
-          再顯示 {Math.min(SHOW_MORE_STEP, hiddenCount)} 堂(還有 {hiddenCount} 堂)
+          <RollingNumber value={`再顯示 ${Math.min(SHOW_MORE_STEP, hiddenCount)} 堂(還有 ${hiddenCount} 堂)`} />
         </button>
       )}
 

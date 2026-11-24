@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTicker } from "../hooks/useTicker";
+import { RollingNumber } from "./RollingNumber";
 import {
   formatClock,
   formatFocusTime,
@@ -121,7 +122,7 @@ export function FocusTimerOverlay({ run, courseName, todayMinutes, onEnd, onNext
             {counting ? (
               <p className="text-[clamp(3rem,16vw,4.5rem)] leading-none font-black tabular-nums">
                 <span className="sr-only">剩下 </span>
-                {formatClock(remaining)}
+                <RollingNumber value={formatClock(remaining)} direction="down" />
               </p>
             ) : (
               <p className="text-3xl font-black">再來一輪?</p>

@@ -1,4 +1,5 @@
 import { useTicker } from "../hooks/useTicker";
+import { RollingNumber } from "./RollingNumber";
 import { formatClock, formatFocusTime, isLongBreak, phaseEndsAt, type FocusRun } from "../services/focus/focusTimer";
 
 interface FocusCardProps {
@@ -19,7 +20,13 @@ export function FocusCard({ run, courseName, todayMinutes, onStart, onOpen }: Fo
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-black">專注計時</h2>
           <p className="mt-0.5 text-xs font-bold text-ink/60 dark:text-white/60">
-            {todayMinutes > 0 ? `今天專注了 ${formatFocusTime(todayMinutes)}` : "選一門課,開始讀書"}
+            {todayMinutes > 0 ? (
+              <>
+                今天專注了 <RollingNumber value={formatFocusTime(todayMinutes)} direction="up" className="tabular-nums" />
+              </>
+            ) : (
+              "選一門課,開始讀書"
+            )}
           </p>
         </div>
         <button
@@ -60,7 +67,9 @@ export function FocusCard({ run, courseName, todayMinutes, onStart, onOpen }: Fo
         </span>
       </span>
       {endsAt !== null && (
-        <span className="shrink-0 text-2xl font-black tabular-nums">{formatClock(endsAt - now)}</span>
+        <span className="shrink-0 text-2xl font-black tabular-nums">
+          <RollingNumber value={formatClock(endsAt - now)} direction="down" />
+        </span>
       )}
       <span aria-hidden="true" className="text-base leading-none font-black opacity-60">
         ›

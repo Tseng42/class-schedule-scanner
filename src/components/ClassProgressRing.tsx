@@ -1,4 +1,5 @@
 import { formatCountdown } from "../services/scheduling/nextClass";
+import { RollingNumber } from "./RollingNumber";
 
 const SIZE = 76;
 const STROKE = 8;
@@ -38,10 +39,14 @@ export function ClassProgressRing({ startAt, endAt, now, finalCountdownMs }: Cla
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
         {isFinalCountdown ? (
-          <span className="text-base font-black tabular-nums">{formatCountdown(msLeft)}</span>
+          <RollingNumber value={formatCountdown(msLeft)} direction="down" className="text-base font-black tabular-nums" />
         ) : (
           <>
-            <span className="text-xl font-black tabular-nums">{Math.round(msLeft / 60000)}</span>
+            <RollingNumber
+              value={String(Math.round(msLeft / 60000))}
+              direction="down"
+              className="text-xl font-black tabular-nums"
+            />
             <span className="mt-0.5 text-[10px] font-black">分</span>
           </>
         )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { EVENT_KIND_LABELS } from "../schema/course";
+import { tapHaptic } from "../lib/haptics";
 import { daysUntil, formatDaysUntil, isTask, type HomeEvents, type ScheduledEvent } from "../services/scheduling/events";
 
 /** Overdue to-dos shown before the rest fold behind a button, so a backlog doesn't bury what's next. */
@@ -28,7 +29,10 @@ function EventRow({ item, now, onToggleDone }: { item: ScheduledEvent; now: Date
           role="checkbox"
           aria-checked={done}
           aria-label={`${title}(${course.name})做完了`}
-          onClick={() => onToggleDone(item)}
+          onClick={() => {
+            tapHaptic();
+            onToggleDone(item);
+          }}
           className="-m-2 grid shrink-0 place-items-center p-2"
         >
           <span
@@ -39,7 +43,9 @@ function EventRow({ item, now, onToggleDone }: { item: ScheduledEvent; now: Date
                 : "border-ink bg-white text-transparent dark:border-white dark:bg-transparent"
             }`}
           >
-            ✓
+            <span className="check-mark" data-on={done}>
+              ✓
+            </span>
           </span>
         </button>
       )}

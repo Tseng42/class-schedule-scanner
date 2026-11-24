@@ -12,6 +12,7 @@ import {
 } from "../services/scheduling/attendance";
 import type { CourseOccurrence } from "../services/scheduling/nextClass";
 import { AttendanceSheet } from "./AttendanceSheet";
+import { RollingNumber } from "./RollingNumber";
 import { useBackgroundPhotoUrl } from "../hooks/useBackgroundPhotoUrl";
 
 const HOUR_HEIGHT = 56;
@@ -89,7 +90,7 @@ export function WeeklyTimetable({ schedule, today, settings, attendance, onMarkA
           {isSharing ? "產生中…" : "分享課表"}
         </button>
         <span className="ml-auto text-xs font-bold text-ink/60 dark:text-white/60">
-          {semesterWeekLabel ? `${semesterWeekLabel} · ${rangeLabel}` : rangeLabel}
+          <RollingNumber value={semesterWeekLabel ? `${semesterWeekLabel} · ${rangeLabel}` : rangeLabel} />
         </span>
       </div>
       {shareError && <p className="text-xs font-bold text-red-700 dark:text-pink">{shareError}</p>}

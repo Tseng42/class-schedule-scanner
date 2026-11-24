@@ -14,6 +14,7 @@ import { FocusCard } from "../components/FocusCard";
 import { FocusSetupSheet } from "../components/FocusSetupSheet";
 import { FocusTimerOverlay } from "../components/FocusTimerOverlay";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
+import { RollingNumber } from "../components/RollingNumber";
 import { burstConfetti } from "../lib/confetti";
 import { formatDateRange } from "../lib/formatDate";
 import type { Course, PrepItem } from "../schema/course";
@@ -361,7 +362,12 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
               </p>
             ))}
             <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-lime tabular-nums">
-              還有 {msUntilEnd <= FINAL_COUNTDOWN_MS ? `${formatCountdown(msUntilEnd)} ` : formatDuration(msUntilEnd)}下課
+              還有{" "}
+              <RollingNumber
+                value={msUntilEnd <= FINAL_COUNTDOWN_MS ? `${formatCountdown(msUntilEnd)} ` : formatDuration(msUntilEnd)}
+                direction="down"
+              />
+              下課
             </p>
           </div>
           <ClassProgressRing
@@ -394,7 +400,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
             </p>
           ))}
           <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-pink">
-            還有 {formatDuration(next.startAt.getTime() - now.getTime())}
+            還有 <RollingNumber value={formatDuration(next.startAt.getTime() - now.getTime())} direction="down" />
           </p>
         </div>
       ) : (

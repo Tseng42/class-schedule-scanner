@@ -1,3 +1,4 @@
+import { tapHaptic } from "../lib/haptics";
 import type { AttendanceStatus } from "../schema/schedule";
 import { ATTENDANCE_OPTIONS } from "../services/scheduling/attendance";
 
@@ -18,7 +19,10 @@ export function AttendanceButtons({ label, selected, onSelect }: AttendanceButto
             key={option.status}
             type="button"
             aria-pressed={isSelected}
-            onClick={() => onSelect(option.status)}
+            onClick={() => {
+              tapHaptic();
+              onSelect(option.status);
+            }}
             className={`min-h-10 rounded-xl border-2 text-xs font-black transition-transform active:scale-95 ${
               isSelected
                 ? "border-ink bg-ink text-lime dark:border-lime dark:bg-lime dark:text-ink"
