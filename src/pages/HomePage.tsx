@@ -7,13 +7,15 @@ import { AttendancePrompt } from "../components/AttendancePrompt";
 import { ClassProgressRing } from "../components/ClassProgressRing";
 import { SemesterReviewStory } from "../components/SemesterReviewStory";
 import { UpcomingEvents } from "../components/UpcomingEvents";
+import { ExamCountdown } from "../components/ExamCountdown";
+import { ExamPrepSheet } from "../components/ExamPrepSheet";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
 import { burstConfetti } from "../lib/confetti";
 import { formatDateRange } from "../lib/formatDate";
-import type { Course } from "../schema/course";
+import type { Course, PrepItem } from "../schema/course";
 import type { AttendanceStatus, Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
-import { getHomeEvents, type ScheduledEvent } from "../services/scheduling/events";
+import { getExamCountdown, getHomeEvents, type ScheduledEvent } from "../services/scheduling/events";
 import { toDateKey } from "../services/scheduling/dateKey";
 import {
   findCurrentOccurrence,
@@ -104,6 +106,8 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const [eventError, setEventError] = useState<string | null>(null);
   /** To-dos checked during this visit stay in the list, struck through, so a mis-tap is easy to undo. */
   const [checkedThisVisit, setCheckedThisVisit] = useState<ReadonlySet<string>>(() => new Set());
+  /** The exam whose 複習清單 is open, looked up fresh from `schedule` so edits show at once. */
+  const [prepFor, setPrepFor] = useState<{ courseId: string; eventId: string } | null>(null);
   const [openReview, setOpenReview] = useState<SemesterReview | null>(null);
   const [dismissedNudge, setDismissedNudge] = useState(readDismissedNudge);
   const now = useNow((at) => nextScreenChange(schedule, settings, at));
@@ -176,6 +180,15 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     }
   };
 
+  const handlePrepChange = (courseId: string, eventId: string, checklist: PrepItem[]) => {
+    try {
+      setSchedule(updateCourseEvent(courseId, eventId, { checklist }));
+      setEventError(null);
+    } catch (error) {
+      setEventError(error instanceof Error ? error.message : "儲存失敗");
+    }
+  };
+
   const handleMark = (occurrence: CourseOccurrence, status: AttendanceStatus) => {
     try {
       setSchedule(setAttendance(attendanceKey(occurrence), status));
@@ -211,6 +224,9 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
 
   const next = getNextOccurrence(schedule, now, settings);
   const todayLabel = now.toLocaleDateString("zh-TW", { month: "long", day: "numeric", weekday: "long" });
+  const examCountdown = getExamCountdown(schedule, now);
+  const prepCourse = prepFor ? schedule.courses.find((course) => course.id === prepFor.courseId) : undefined;
+  const prepExam = prepCourse?.events?.find((event) => event.id === prepFor?.eventId);
   const homeEvents = getHomeEvents(schedule, now, trackingStartKey(schedule, settings), checkedThisVisit);
   const semester = getSemesterStatus(settings, now);
   const holiday = getHolidayCountdown(schedule, now);
@@ -332,6 +348,12 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         </div>
       )}
 
+      <ExamCountdown
+        exams={examCountdown}
+        now={now}
+        onOpen={(item) => setPrepFor({ courseId: item.course.id, eventId: item.event.id })}
+      />
+
       <UpcomingEvents events={homeEvents} now={now} onToggleDone={handleToggleDone} error={eventError} />
 
       <WeeklyTimetable
@@ -406,6 +428,15 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         </div>
       )}
 
+      {prepCourse && prepExam && (
+        <ExamPrepSheet
+          course={prepCourse}
+          exam={prepExam}
+          now={now}
+          onChange={(checklist) => handlePrepChange(prepCourse.id, prepExam.id, checklist)}
+          onClose={() => setPrepFor(null)}
+        />
+      )}
       {openReview && <SemesterReviewStory review={openReview} onClose={closeReview} />}
     </main>
   );

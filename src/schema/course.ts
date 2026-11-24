@@ -57,6 +57,14 @@ export const EVENT_KIND_LABELS: Record<EventKind, string> = {
   other: "其他",
 };
 
+/** One line of an exam's 複習清單, e.g. "第 3–5 章" or "做考古題/練習題". */
+export const prepItemSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  done: z.boolean().optional(),
+});
+export type PrepItem = z.infer<typeof prepItemSchema>;
+
 /** An exam, assignment due date, or anything else worth a reminder, tied to a course. */
 export const courseEventSchema = z.object({
   id: z.string(),
@@ -71,6 +79,8 @@ export const courseEventSchema = z.object({
   done: z.boolean().optional(),
   /** Marked 急: listed first and shown in red. */
   urgent: z.boolean().optional(),
+  /** Exams only: what to review before it. */
+  checklist: z.array(prepItemSchema).optional(),
 });
 export type CourseEvent = z.infer<typeof courseEventSchema>;
 

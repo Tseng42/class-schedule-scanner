@@ -8,6 +8,8 @@ import {
   type Note,
 } from "../schema/course";
 import { generateId } from "../lib/id";
+import { ExamPrepSheet } from "./ExamPrepSheet";
+import { prepProgress } from "../services/scheduling/events";
 import { formatDateRange } from "../lib/formatDate";
 
 interface CourseExtrasProps {
@@ -73,6 +75,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
   const [eventTime, setEventTime] = useState("");
   const [eventRemind, setEventRemind] = useState(1440);
   const [eventUrgent, setEventUrgent] = useState(false);
+  const [prepEventId, setPrepEventId] = useState<string | null>(null);
   const [eventError, setEventError] = useState<string | null>(null);
 
   const [noteText, setNoteText] = useState("");
@@ -262,6 +265,15 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-1">
+                  {!task && (
+                    <button
+                      type="button"
+                      onClick={() => setPrepEventId(item.id)}
+                      className="rounded-full bg-ink px-2 py-0.5 text-[10px] font-black text-sky"
+                    >
+                      複習{prepProgress(item).total > 0 ? ` ${prepProgress(item).done}/${prepProgress(item).total}` : ""}
+                    </button>
+                  )}
                   {task && !done && (
                     <button
                       type="button"
@@ -449,6 +461,16 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
             </button>
           </div>
         </div>
+      )}
+
+      {prepEventId && events.some((item) => item.id === prepEventId) && (
+        <ExamPrepSheet
+          course={course}
+          exam={events.find((item) => item.id === prepEventId)!}
+          now={new Date()}
+          onChange={(checklist) => patchEvent(prepEventId, { checklist })}
+          onClose={() => setPrepEventId(null)}
+        />
       )}
 
       {openForm === "note" && (

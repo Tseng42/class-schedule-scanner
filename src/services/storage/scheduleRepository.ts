@@ -157,8 +157,12 @@ export function removeHoliday(holidayId: string): Schedule {
   return updated;
 }
 
-/** Checks off an assignment or flags it 急, as a course edit so it syncs like one. */
-export function updateCourseEvent(courseId: string, eventId: string, patch: Pick<CourseEvent, "done" | "urgent">): Schedule {
+/** Checks off an assignment, flags it 急 or edits an exam's 複習清單, as a course edit so it syncs like one. */
+export function updateCourseEvent(
+  courseId: string,
+  eventId: string,
+  patch: Partial<Pick<CourseEvent, "done" | "urgent" | "checklist">>,
+): Schedule {
   const course = loadSchedule().courses.find((item) => item.id === courseId);
   if (!course) throw new Error("找不到這門課");
   const events = (course.events ?? []).map((event) => (event.id === eventId ? { ...event, ...patch } : event));
