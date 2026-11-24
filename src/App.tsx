@@ -5,6 +5,7 @@ import { SettingsPage, type SettingsSection } from "./pages/SettingsPage";
 import { ManageCoursesPage } from "./pages/ManageCoursesPage";
 import { useSwipeNavigation, type DragProgress } from "./hooks/useSwipeNavigation";
 import { useAppUpdate } from "./hooks/useAppUpdate";
+import { TitleBarSlotContext } from "./lib/titleBarSlot";
 
 type View = "home" | "add" | "manage" | "settings";
 type Direction = "next" | "prev";
@@ -36,6 +37,7 @@ function App() {
   const [addStartMode, setAddStartMode] = useState<AddCourseMode | null>(null);
   const updateReady = useAppUpdate();
   const contentRef = useRef<HTMLDivElement>(null);
+  const [titleBarSlot, setTitleBarSlot] = useState<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<View, HTMLButtonElement>());
@@ -235,35 +237,38 @@ function App() {
 
   return (
     <div className="min-h-screen bg-cream dark:bg-ink">
-      <div
-        ref={contentRef}
-        key={settingsSection ?? view}
-        className={`pb-24 ${direction ? `page-enter-${direction}` : ""}`}
-      >
-        {view === "home" && (
-          <HomePage onNavigateUpload={() => openAddCourse("scan")} onAddCourse={() => openAddCourse("manual")} />
-        )}
-        {view === "manage" && (
-          <ManageCoursesPage
-            onNavigateUpload={() => openAddCourse("scan")}
-            onAddCourse={() => openAddCourse("manual")}
-          />
-        )}
-        {view === "add" && (
-          <AddCoursePage
-            initialMode={addStartMode}
-            onNavigateHome={() => navigateTo("home")}
-            onNavigateManage={() => navigateTo("manage")}
-          />
-        )}
-        {view === "settings" && (
-          <SettingsPage
-            section={settingsSection}
-            onOpenSection={openSettingsSection}
-            onBack={closeSettingsSection}
-          />
-        )}
-      </div>
+      <div ref={setTitleBarSlot} />
+      <TitleBarSlotContext.Provider value={titleBarSlot}>
+        <div
+          ref={contentRef}
+          key={settingsSection ?? view}
+          className={`pb-24 ${direction ? `page-enter-${direction}` : ""}`}
+        >
+          {view === "home" && (
+            <HomePage onNavigateUpload={() => openAddCourse("scan")} onAddCourse={() => openAddCourse("manual")} />
+          )}
+          {view === "manage" && (
+            <ManageCoursesPage
+              onNavigateUpload={() => openAddCourse("scan")}
+              onAddCourse={() => openAddCourse("manual")}
+            />
+          )}
+          {view === "add" && (
+            <AddCoursePage
+              initialMode={addStartMode}
+              onNavigateHome={() => navigateTo("home")}
+              onNavigateManage={() => navigateTo("manage")}
+            />
+          )}
+          {view === "settings" && (
+            <SettingsPage
+              section={settingsSection}
+              onOpenSection={openSettingsSection}
+              onBack={closeSettingsSection}
+            />
+          )}
+        </div>
+      </TitleBarSlotContext.Provider>
       <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div
           ref={navRef}

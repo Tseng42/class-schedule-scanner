@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LargeTitle } from "../components/LargeTitle";
 import type { User } from "firebase/auth";
 import { addHoliday, addHolidays, loadSchedule, removeHoliday } from "../services/storage/scheduleRepository";
 import { OFFICIAL_HOLIDAYS_TW_2026 } from "../data/officialHolidays";
@@ -186,7 +187,7 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
           >
             ‹ 設定
           </button>
-          <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">{activeRow.title}</h1>
+          <LargeTitle back={{ label: "設定", onClick: onBack }}>{activeRow.title}</LargeTitle>
         </header>
 
         {storageErrorBanner}
@@ -241,7 +242,7 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 px-4 py-8">
       <header>
-        <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">設定</h1>
+        <LargeTitle>設定</LargeTitle>
       </header>
 
       {storageErrorBanner}

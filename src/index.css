@@ -195,6 +195,48 @@ body {
   }
 }
 
+/* LargeTitle's compact bar: frosted like the tab bar but flat, since glass
+   belongs to the navigation layer only. A thin rule marks where content slides under. */
+.title-bar {
+  background: rgb(247 245 238 / 0.72);
+  border-bottom: 1px solid rgb(11 11 15 / 0.08);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .title-bar {
+    background: rgb(11 11 15 / 0.72);
+    border-bottom-color: rgb(255 255 255 / 0.1);
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .title-bar {
+    background: rgb(247 245 238 / 0.96);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .title-bar {
+      background: rgb(11 11 15 / 0.96);
+    }
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .title-bar {
+    background: #f7f5ee;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .title-bar {
+      background: #0b0b0f;
+    }
+  }
+}
+
 @keyframes confetti-fall {
   from {
     transform: translate(0, 0) rotate(0deg);

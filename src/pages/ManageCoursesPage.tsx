@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LargeTitle } from "../components/LargeTitle";
 import { DAY_OF_WEEK_LABELS, type Course } from "../schema/course";
 import {
   blankCourseDraft,
@@ -149,7 +150,7 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">所有課程</h1>
+          <LargeTitle>所有課程</LargeTitle>
           <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">共 {courses.length} 堂課</p>
         </div>
         {!isAddingNew && (

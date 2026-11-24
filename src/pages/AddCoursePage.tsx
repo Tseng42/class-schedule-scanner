@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LargeTitle } from "../components/LargeTitle";
 import type { Course } from "../schema/course";
 import { blankCourseDraft, draftsToCourses, validateDraft } from "../schema/mapExtraction";
 import { addCourses, loadSchedule } from "../services/storage/scheduleRepository";
@@ -34,7 +35,7 @@ export function AddCoursePage({ initialMode, onNavigateHome, onNavigateManage }:
     return (
       <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
         <header>
-          <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">新增課程</h1>
+          <LargeTitle>新增課程</LargeTitle>
           <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">選一種方式把課加進來。</p>
         </header>
 
@@ -67,7 +68,7 @@ export function AddCoursePage({ initialMode, onNavigateHome, onNavigateManage }:
         >
           ‹ 新增課程
         </button>
-        <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">{MODES[mode].title}</h1>
+        <LargeTitle back={{ label: "新增課程", onClick: () => setMode(null) }}>{MODES[mode].title}</LargeTitle>
         <p className="text-sm font-bold text-ink/60 dark:text-white/60">{MODES[mode].intro}</p>
       </header>
 

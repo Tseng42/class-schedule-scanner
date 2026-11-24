@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { LargeTitle } from "../components/LargeTitle";
 import { loadSchedule, setAttendance, updateCourseEvent } from "../services/storage/scheduleRepository";
 import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
 import { useNow } from "../hooks/useNow";
@@ -298,7 +299,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 px-4 py-8">
       <header>
-        <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">課表</h1>
+        <LargeTitle>課表</LargeTitle>
         <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">{todayLabel}</p>
       </header>
 

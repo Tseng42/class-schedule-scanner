@@ -23,8 +23,9 @@ export default defineConfig({
         short_name: '課表掃描',
         description: '上傳課表截圖或 PDF,辨識成結構化課表,並提供上課提醒。',
         lang: 'zh-TW',
-        theme_color: '#4f46e5',
-        background_color: '#f9fafb',
+        // The page background (cream), matching the theme-color meta tags in index.html.
+        theme_color: '#f7f5ee',
+        background_color: '#f7f5ee',
         display: 'standalone',
         start_url: '/',
         icons: [
