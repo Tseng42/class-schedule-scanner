@@ -60,7 +60,7 @@ function occurrencesBetween(schedule: Schedule, settings: AppSettings, fromKey: 
 }
 
 /** The semester's first day, or else the day the earliest course was added. */
-function trackingStartKey(schedule: Schedule, settings: AppSettings): string | null {
+export function trackingStartKey(schedule: Schedule, settings: AppSettings): string | null {
   if (settings.semesterStartDate) return settings.semesterStartDate;
   const earliest = schedule.courses.map((course) => course.createdAt).sort()[0];
   return earliest ? toDateKey(new Date(earliest)) : null;

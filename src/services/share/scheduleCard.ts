@@ -3,6 +3,7 @@ import type { Schedule } from "../../schema/schedule";
 import type { AppSettings } from "../../schema/settings";
 import { buildWeekLayout, formatMonthDay } from "../scheduling/weekLayout";
 import { accentHex } from "../../lib/theme";
+import { CANVAS_FONT as FONT, canvasToBlob, roundedRectPath, shareOrDownloadImage, truncateToWidth } from "./shareImage";
 
 const SCALE = 2;
 const WIDTH = 1080;
@@ -14,8 +15,6 @@ const DAY_HEADER_HEIGHT = 92;
 const HEADER_HEIGHT = 108;
 const FOOTER_HEIGHT = 56;
 
-const FONT = "'PingFang TC','Microsoft JhengHei',sans-serif";
-
 const COLORS = {
   bg: "#f7f5ee",
   ink: "#0b0b0f",
@@ -24,29 +23,6 @@ const COLORS = {
   inkFaintest: "rgba(11,11,15,0.08)",
   white: "#ffffff",
 };
-
-/** ctx.roundRect landed in all major engines a while ago, but fall back to a square rect just in case. */
-function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  if (typeof ctx.roundRect === "function") {
-    ctx.roundRect(x, y, w, h, r);
-  } else {
-    ctx.rect(x, y, w, h);
-  }
-}
-
-function truncateToWidth(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
-  if (ctx.measureText(text).width <= maxWidth) return text;
-  let low = 0;
-  let high = text.length;
-  while (low < high) {
-    const mid = Math.ceil((low + high) / 2);
-    const candidate = `${text.slice(0, mid)}…`;
-    if (ctx.measureText(candidate).width <= maxWidth) low = mid;
-    else high = mid - 1;
-  }
-  return low > 0 ? `${text.slice(0, low)}…` : "…";
-}
 
 export function renderScheduleCardCanvas(
   schedule: Schedule,
@@ -214,24 +190,6 @@ export function renderScheduleCardCanvas(
   return canvas;
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error("圖片產生失敗"));
-    }, "image/png");
-  });
-}
-
-function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 /** Renders the card, then opens the native share sheet if available, otherwise downloads the PNG. */
 export async function shareScheduleCard(
   schedule: Schedule,
@@ -242,17 +200,5 @@ export async function shareScheduleCard(
   const canvas = renderScheduleCardCanvas(schedule, settings, today, weekOffset);
   const blob = await canvasToBlob(canvas);
   const filename = `課表-${formatMonthDay(buildWeekLayout(schedule, settings, today, weekOffset).columns[0].date).replace("/", "-")}.png`;
-  const file = new File([blob], filename, { type: "image/png" });
-
-  const nav = navigator as Navigator & { canShare?: (data?: ShareData) => boolean };
-  if (nav.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: "我的課表" });
-      return;
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") return;
-      // Fall through to download if sharing failed for any other reason.
-    }
-  }
-  downloadBlob(blob, filename);
+  await shareOrDownloadImage(blob, filename, "我的課表");
 }

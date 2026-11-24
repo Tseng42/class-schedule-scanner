@@ -5,6 +5,7 @@ import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
 import { AttendancePrompt } from "../components/AttendancePrompt";
 import { ClassProgressRing } from "../components/ClassProgressRing";
+import { SemesterReviewStory } from "../components/SemesterReviewStory";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
 import { burstConfetti } from "../lib/confetti";
 import { formatDateRange } from "../lib/formatDate";
@@ -24,11 +25,23 @@ import {
 } from "../services/scheduling/nextClass";
 import { getHolidayCountdown, getSemesterStatus } from "../services/scheduling/semester";
 import { attendanceKey, listCoursesNearLimit, listUnmarkedClasses } from "../services/scheduling/attendance";
+import { buildSemesterReview, isReviewSeason, type SemesterReview } from "../services/scheduling/semesterReview";
 
 /** The last stretch of a class, when the countdown ticks every second. */
 const FINAL_COUNTDOWN_MS = 5 * 60 * 1000;
 /** How long "下課啦！" stays up after a class ends. */
 const CLASS_END_CELEBRATION_MS = 60 * 1000;
+
+/** Holds the semester end date whose "回顧出爐了" card was dismissed, so it stays gone until the next semester. */
+const REVIEW_NUDGE_DISMISSED_KEY = "class-schedule-scanner:review-nudge-dismissed";
+
+function readDismissedNudge(): string | null {
+  try {
+    return localStorage.getItem(REVIEW_NUDGE_DISMISSED_KEY);
+  } catch {
+    return null;
+  }
+}
 
 /** Classes whose end has already been celebrated, so returning to this page doesn't fire the confetti again. */
 const celebratedClasses = new Set<string>();
@@ -82,6 +95,8 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const [schedule, setSchedule] = useState(() => loadSchedule());
   const [settings] = useState(() => loadSettings());
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [openReview, setOpenReview] = useState<SemesterReview | null>(null);
+  const [dismissedNudge, setDismissedNudge] = useState(readDismissedNudge);
   const now = useNow((at) => nextScreenChange(schedule, settings, at));
 
   useClassReminders(schedule, settings, isNotificationGranted());
@@ -108,6 +123,38 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     () => listCoursesNearLimit(schedule, settings, new Date(`${dateKey}T12:00:00`)),
     [schedule, settings, dateKey],
   );
+
+  const review = useMemo(
+    () => buildSemesterReview(schedule, settings, new Date(minute * 60000)),
+    [schedule, settings, minute],
+  );
+  const hasReview = review !== null && review.classCount > 0;
+
+  // The open review is a history entry, so Android back and swipe-back close it
+  // instead of leaving the app.
+  const showReview = () => {
+    if (!review) return;
+    window.history.pushState(null, "");
+    setOpenReview(review);
+  };
+  const closeReview = () => window.history.back();
+
+  useEffect(() => {
+    if (!openReview) return;
+    const handlePopState = () => setOpenReview(null);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [openReview]);
+
+  const dismissNudge = () => {
+    const end = settings.semesterEndDate ?? "";
+    setDismissedNudge(end);
+    try {
+      localStorage.setItem(REVIEW_NUDGE_DISMISSED_KEY, end);
+    } catch {
+      // Only means the card comes back next visit.
+    }
+  };
 
   const handleMark = (occurrence: CourseOccurrence, status: AttendanceStatus) => {
     try {
@@ -149,6 +196,9 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const holiday = getHolidayCountdown(schedule, now);
   const msUntilEnd = current ? current.endAt.getTime() - now.getTime() : 0;
 
+  const showNudge = hasReview && isReviewSeason(settings, now) && dismissedNudge !== settings.semesterEndDate;
+  const showReviewCard = hasReview && semester?.kind !== "during";
+
   const stripCardClass =
     "min-w-0 flex-1 rounded-2xl border-2 border-ink/10 bg-white p-3.5 text-ink dark:border-white/10 dark:bg-white/5 dark:text-white";
   const stripLabelClass = "text-xs font-black text-ink/60 dark:text-white/60";
@@ -159,6 +209,30 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         <h1 className="text-3xl font-black tracking-tight text-ink dark:text-white">課表</h1>
         <p className="mt-1 text-sm font-bold text-ink/60 dark:text-white/60">{todayLabel}</p>
       </header>
+
+      {showNudge && review && (
+        <section className="flex items-center gap-2 rounded-3xl bg-sky py-3 pr-2 pl-4 text-ink">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-black">{review.isFinished ? "學期回顧出爐了" : "學期快結束了,回顧出爐了"}</h2>
+            <p className="mt-0.5 text-xs font-bold">上了幾堂課、撐過幾個早八</p>
+          </div>
+          <button
+            type="button"
+            onClick={showReview}
+            className="shrink-0 rounded-full bg-ink px-4 py-2.5 text-sm font-black text-sky transition-transform active:scale-95"
+          >
+            看回顧
+          </button>
+          <button
+            type="button"
+            onClick={dismissNudge}
+            aria-label="收起學期回顧提醒"
+            className="grid size-10 shrink-0 place-items-center rounded-full text-xl leading-none font-black"
+          >
+            ×
+          </button>
+        </section>
+      )}
 
       {nearLimit.length > 0 && (
         <section className="rounded-3xl border-2 border-ink bg-white p-4 text-ink dark:border-pink dark:bg-white/5 dark:text-white">
@@ -278,7 +352,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         onMarkAttendance={handleMark}
       />
 
-      {(semester || holiday) && (
+      {(semester || holiday || showReviewCard) && (
         <div className="flex gap-3">
           {semester?.kind === "before" && (
             <div className={stripCardClass}>
@@ -305,7 +379,22 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
                   />
                 </div>
               )}
+              {hasReview && (
+                <button
+                  type="button"
+                  onClick={showReview}
+                  className="-mx-1 mt-1.5 rounded-full px-1 py-1.5 text-xs font-black underline decoration-2 underline-offset-2"
+                >
+                  看學期回顧 ›
+                </button>
+              )}
             </div>
+          )}
+          {showReviewCard && (
+            <button type="button" onClick={showReview} className={`${stripCardClass} text-left`}>
+              <p className={stripLabelClass}>學期回顧</p>
+              <p className="mt-1 text-lg font-black">點開看看 ›</p>
+            </button>
           )}
           {holiday && (
             <div className={stripCardClass}>
@@ -326,6 +415,8 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
           )}
         </div>
       )}
+
+      {openReview && <SemesterReviewStory review={openReview} onClose={closeReview} />}
     </main>
   );
 }
