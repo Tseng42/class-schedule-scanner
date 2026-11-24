@@ -67,6 +67,10 @@ export const courseEventSchema = z.object({
   time: timeSchema.optional(),
   /** How long before the event to remind. Omitted means no reminder. */
   remindMinutes: z.number().int().positive().optional(),
+  /** Checked off. Only assignments and other to-dos can be; an exam isn't something you finish. */
+  done: z.boolean().optional(),
+  /** Marked 急: listed first and shown in red. */
+  urgent: z.boolean().optional(),
 });
 export type CourseEvent = z.infer<typeof courseEventSchema>;
 

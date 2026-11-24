@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { loadSchedule, setAttendance } from "../services/storage/scheduleRepository";
+import { loadSchedule, setAttendance, updateCourseEvent } from "../services/storage/scheduleRepository";
 import { loadSettings } from "../services/storage/settingsRepository";
 import { useNow } from "../hooks/useNow";
 import { useClassReminders } from "../hooks/useClassReminders";
 import { AttendancePrompt } from "../components/AttendancePrompt";
 import { ClassProgressRing } from "../components/ClassProgressRing";
 import { SemesterReviewStory } from "../components/SemesterReviewStory";
+import { UpcomingEvents } from "../components/UpcomingEvents";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
 import { burstConfetti } from "../lib/confetti";
 import { formatDateRange } from "../lib/formatDate";
-import { EVENT_KIND_LABELS, type Course } from "../schema/course";
+import type { Course } from "../schema/course";
 import type { AttendanceStatus, Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
-import { daysUntil, formatDaysUntil, getUpcomingEvents } from "../services/scheduling/events";
+import { getHomeEvents, type ScheduledEvent } from "../services/scheduling/events";
 import { toDateKey } from "../services/scheduling/dateKey";
 import {
   findCurrentOccurrence,
@@ -24,7 +25,12 @@ import {
   type CourseOccurrence,
 } from "../services/scheduling/nextClass";
 import { getHolidayCountdown, getSemesterStatus } from "../services/scheduling/semester";
-import { attendanceKey, listCoursesNearLimit, listUnmarkedClasses } from "../services/scheduling/attendance";
+import {
+  attendanceKey,
+  listCoursesNearLimit,
+  listUnmarkedClasses,
+  trackingStartKey,
+} from "../services/scheduling/attendance";
 import { buildSemesterReview, isReviewSeason, type SemesterReview } from "../services/scheduling/semesterReview";
 
 /** The last stretch of a class, when the countdown ticks every second. */
@@ -95,6 +101,9 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const [schedule, setSchedule] = useState(() => loadSchedule());
   const [settings] = useState(() => loadSettings());
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [eventError, setEventError] = useState<string | null>(null);
+  /** To-dos checked during this visit stay in the list, struck through, so a mis-tap is easy to undo. */
+  const [checkedThisVisit, setCheckedThisVisit] = useState<ReadonlySet<string>>(() => new Set());
   const [openReview, setOpenReview] = useState<SemesterReview | null>(null);
   const [dismissedNudge, setDismissedNudge] = useState(readDismissedNudge);
   const now = useNow((at) => nextScreenChange(schedule, settings, at));
@@ -156,6 +165,17 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     }
   };
 
+  const handleToggleDone = (item: ScheduledEvent) => {
+    const done = !item.event.done;
+    try {
+      setSchedule(updateCourseEvent(item.course.id, item.event.id, { done }));
+      setCheckedThisVisit((current) => new Set(current).add(item.event.id));
+      setEventError(null);
+    } catch (error) {
+      setEventError(error instanceof Error ? error.message : "儲存失敗");
+    }
+  };
+
   const handleMark = (occurrence: CourseOccurrence, status: AttendanceStatus) => {
     try {
       setSchedule(setAttendance(attendanceKey(occurrence), status));
@@ -191,7 +211,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
 
   const next = getNextOccurrence(schedule, now, settings);
   const todayLabel = now.toLocaleDateString("zh-TW", { month: "long", day: "numeric", weekday: "long" });
-  const upcomingEvents = getUpcomingEvents(schedule, now);
+  const homeEvents = getHomeEvents(schedule, now, trackingStartKey(schedule, settings), checkedThisVisit);
   const semester = getSemesterStatus(settings, now);
   const holiday = getHolidayCountdown(schedule, now);
   const msUntilEnd = current ? current.endAt.getTime() - now.getTime() : 0;
@@ -312,37 +332,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         </div>
       )}
 
-      {upcomingEvents.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="px-1 text-xs font-black tracking-wide text-ink/60 uppercase dark:text-white/60">
-            近期事項
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {upcomingEvents.map((item) => (
-              <li
-                key={item.event.id}
-                className="flex items-center justify-between gap-3 rounded-2xl border-2 border-ink/10 bg-white p-3.5 dark:border-white/10 dark:bg-white/5"
-              >
-                <div className="min-w-0">
-                  <p className="font-black text-ink dark:text-white">
-                    <span className="mr-2 rounded-full bg-sky px-2 py-0.5 text-[10px] text-ink">
-                      {EVENT_KIND_LABELS[item.event.kind]}
-                    </span>
-                    {item.event.title}
-                  </p>
-                  <p className="mt-0.5 text-xs font-bold text-ink/60 dark:text-white/60">{item.course.name}</p>
-                </div>
-                <span className="shrink-0 text-right text-xs font-black text-ink dark:text-white">
-                  {formatDaysUntil(daysUntil(item.event, now))}
-                  {item.event.time && (
-                    <span className="block font-bold text-ink/60 dark:text-white/60">{item.event.time}</span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <UpcomingEvents events={homeEvents} now={now} onToggleDone={handleToggleDone} error={eventError} />
 
       <WeeklyTimetable
         schedule={schedule}

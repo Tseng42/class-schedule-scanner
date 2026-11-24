@@ -177,7 +177,7 @@ function buildSlides(review: SemesterReview): Slide[] {
       key: "events",
       content: (
         <>
-          <p className={kickerClass}>這學期你記了</p>
+          <p className={kickerClass}>這學期有</p>
           {review.examCount > 0 && (
             <p className={bigClass}>
               <CountUp value={review.examCount} /> 次考試
@@ -185,7 +185,9 @@ function buildSlides(review: SemesterReview): Slide[] {
           )}
           {review.assignmentCount > 0 && (
             <p className={`${bigClass} ${review.examCount > 0 ? "mt-4" : ""}`}>
-              <CountUp value={review.assignmentCount} /> 份作業
+              {/* Once anything has been checked off, count what got done rather than what was assigned. */}
+              <CountUp value={review.assignmentDoneCount > 0 ? review.assignmentDoneCount : review.assignmentCount} /> 份作業
+              {review.assignmentDoneCount > 0 ? "完成" : ""}
             </p>
           )}
           <p className={subClass}>都撐過來了。</p>

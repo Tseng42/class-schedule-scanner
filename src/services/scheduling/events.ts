@@ -33,14 +33,51 @@ export function listEvents(schedule: Schedule): ScheduledEvent[] {
     .sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 }
 
-/** Events from today onward (date-based, so today's earlier-hour events still show), within `withinDays`. */
-export function getUpcomingEvents(schedule: Schedule, now: Date, withinDays = 30): ScheduledEvent[] {
+/** Assignments and other to-dos can be checked off; exams can't. */
+export function isTask(event: CourseEvent): boolean {
+  return event.kind !== "exam";
+}
+
+export interface HomeEvents {
+  /** Flagged 急 and not yet done, overdue or not. */
+  urgent: ScheduledEvent[];
+  /** To-dos past their date and still not checked off, oldest first. */
+  overdue: ScheduledEvent[];
+  /** Everything else from today through `withinDays`, soonest first. */
+  upcoming: ScheduledEvent[];
+}
+
+/**
+ * What the home screen's 近期事項 shows. Checked-off to-dos drop out, except the ones in
+ * `keepIds` (checked during this visit), which stay put so a mis-tap is easy to undo.
+ * Overdue to-dos only go back as far as `sinceKey` (the semester start) when it's set.
+ */
+export function getHomeEvents(
+  schedule: Schedule,
+  now: Date,
+  sinceKey: string | null,
+  keepIds: ReadonlySet<string>,
+  withinDays = 30,
+): HomeEvents {
   const todayKey = toDateKey(now);
   const limit = parseDateKey(todayKey);
   limit.setDate(limit.getDate() + withinDays);
-  return listEvents(schedule).filter(
-    (item) => item.event.date >= todayKey && parseDateKey(item.event.date).getTime() <= limit.getTime(),
-  );
+  const limitKey = toDateKey(limit);
+
+  const result: HomeEvents = { urgent: [], overdue: [], upcoming: [] };
+  for (const item of listEvents(schedule)) {
+    const { event } = item;
+    if (event.done && !keepIds.has(event.id)) continue;
+    if (event.date < todayKey) {
+      if (!isTask(event) || (sinceKey && event.date < sinceKey)) continue;
+      if (event.urgent) result.urgent.push(item);
+      else result.overdue.push(item);
+    } else if (event.date <= limitKey) {
+      if (isTask(event) && event.urgent) result.urgent.push(item);
+      else result.upcoming.push(item);
+    }
+  }
+  return result;
 }
 
 /** Whole calendar days from `now`'s date until the event's date (0 = today). */
@@ -51,7 +88,8 @@ export function daysUntil(event: CourseEvent, now: Date): number {
 }
 
 export function formatDaysUntil(days: number): string {
-  if (days <= 0) return "今天";
+  if (days < 0) return `過期 ${-days} 天`;
+  if (days === 0) return "今天";
   if (days === 1) return "明天";
   return `${days} 天後`;
 }

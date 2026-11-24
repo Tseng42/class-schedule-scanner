@@ -5,7 +5,7 @@ import {
   type Holiday,
   type Schedule,
 } from "../../schema/schedule";
-import type { Course } from "../../schema/course";
+import type { Course, CourseEvent } from "../../schema/course";
 import { writeJSON } from "./persist";
 import { generateId } from "../../lib/id";
 import { requestSync } from "../sync/syncTrigger";
@@ -155,6 +155,14 @@ export function removeHoliday(holidayId: string): Schedule {
   persist(updated);
   requestSync("schedule");
   return updated;
+}
+
+/** Checks off an assignment or flags it 急, as a course edit so it syncs like one. */
+export function updateCourseEvent(courseId: string, eventId: string, patch: Pick<CourseEvent, "done" | "urgent">): Schedule {
+  const course = loadSchedule().courses.find((item) => item.id === courseId);
+  if (!course) throw new Error("找不到這門課");
+  const events = (course.events ?? []).map((event) => (event.id === eventId ? { ...event, ...patch } : event));
+  return updateCourse(courseId, { ...course, events });
 }
 
 export function updateCourse(courseId: string, next: Course): Schedule {

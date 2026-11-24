@@ -12,7 +12,7 @@
 /** @typedef {{ id: string, dayOfWeek: string, startTime: string, endTime: string }} TimeSlot */
 /** @typedef {{ type: "weekly", startDate?: string, endDate?: string } | { type: "once", date: string }} Recurrence */
 /** @typedef {{ startDate: string, endDate: string, reason?: string }} Cancellation */
-/** @typedef {{ kind: string, title: string, date: string, time?: string }} CourseEvent */
+/** @typedef {{ kind: string, title: string, date: string, time?: string, done?: boolean }} CourseEvent */
 /** @typedef {{ text: string, date?: string }} Note */
 /**
  * @typedef {object} Course
@@ -217,7 +217,8 @@ function notesFor(course, dateKey) {
 }
 
 /**
- * Events dated from `fromKey` through `toKey` inclusive, soonest first.
+ * Events dated from `fromKey` through `toKey` inclusive, soonest first. Assignments
+ * already checked off in the app are left out.
  * @param {Schedule} schedule
  * @param {string} fromKey
  * @param {string} toKey
@@ -225,7 +226,7 @@ function notesFor(course, dateKey) {
 function eventsBetween(schedule, fromKey, toKey) {
   return (schedule.courses ?? [])
     .flatMap((course) => (course.events ?? []).map((event) => ({ course, event })))
-    .filter(({ event }) => event.date >= fromKey && event.date <= toKey)
+    .filter(({ event }) => !event.done && event.date >= fromKey && event.date <= toKey)
     .sort((a, b) => `${a.event.date} ${a.event.time ?? ""}`.localeCompare(`${b.event.date} ${b.event.time ?? ""}`));
 }
 

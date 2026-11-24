@@ -72,6 +72,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
   const [eventRemind, setEventRemind] = useState(1440);
+  const [eventUrgent, setEventUrgent] = useState(false);
   const [eventError, setEventError] = useState<string | null>(null);
 
   const [noteText, setNoteText] = useState("");
@@ -135,6 +136,7 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
       date: eventDate,
       time: eventTime || undefined,
       remindMinutes: eventRemind || undefined,
+      urgent: eventKind !== "exam" && eventUrgent ? true : undefined,
     };
     const sorted = [...events, next].sort((a, b) =>
       `${a.date} ${a.time ?? ""}`.localeCompare(`${b.date} ${b.time ?? ""}`),
@@ -143,8 +145,13 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
     setEventTitle("");
     setEventDate("");
     setEventTime("");
+    setEventUrgent(false);
     setEventError(null);
     setOpenForm(null);
+  };
+
+  const patchEvent = (eventId: string, patch: Partial<CourseEvent>) => {
+    save({ events: events.map((item) => (item.id === eventId ? { ...item, ...patch } : item)) });
   };
 
   const addNote = () => {
@@ -216,28 +223,69 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
 
       {events.length > 0 && (
         <ul className="flex flex-col gap-1.5">
-          {events.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-center justify-between gap-2 rounded-2xl bg-sky py-1.5 pr-1.5 pl-3 text-xs font-black text-ink"
-            >
-              <span className="min-w-0">
-                <span className="mr-1.5 rounded-full bg-ink px-2 py-0.5 text-[10px] text-sky">
-                  {EVENT_KIND_LABELS[item.kind]}
-                </span>
-                {item.title} · {formatEventWhen(item)}
-                <span className="font-bold opacity-70"> · {formatRemind(item.remindMinutes)}</span>
-              </span>
-              <button
-                type="button"
-                aria-label="刪除這個事項"
-                onClick={() => save({ events: events.filter((other) => other.id !== item.id) })}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink/10 hover:bg-ink hover:text-sky"
+          {events.map((item) => {
+            const task = item.kind !== "exam";
+            const done = Boolean(item.done);
+            return (
+              <li
+                key={item.id}
+                className="flex items-center justify-between gap-2 rounded-2xl bg-sky py-1.5 pr-1.5 pl-1.5 text-xs font-black text-ink"
               >
-                ×
-              </button>
-            </li>
-          ))}
+                <span className="flex min-w-0 items-center gap-1.5">
+                  {task ? (
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={done}
+                      aria-label={`${item.title}做完了`}
+                      onClick={() => patchEvent(item.id, { done: !done || undefined })}
+                      className={`grid size-6 shrink-0 place-items-center rounded-md border-2 border-ink text-[11px] ${
+                        done ? "bg-ink text-sky" : "bg-white text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </button>
+                  ) : (
+                    <span aria-hidden="true" className="w-1 shrink-0" />
+                  )}
+                  <span className={`min-w-0 ${done ? "opacity-60" : ""}`}>
+                    <span className="mr-1.5 rounded-full bg-ink px-2 py-0.5 text-[10px] text-sky">
+                      {EVENT_KIND_LABELS[item.kind]}
+                    </span>
+                    {item.urgent && !done && (
+                      <span className="mr-1.5 rounded-full bg-red-700 px-2 py-0.5 text-[10px] text-white">急</span>
+                    )}
+                    <span className={done ? "line-through" : ""}>
+                      {item.title} · {formatEventWhen(item)}
+                    </span>
+                    <span className="font-bold opacity-70"> · {done ? "已完成" : formatRemind(item.remindMinutes)}</span>
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1">
+                  {task && !done && (
+                    <button
+                      type="button"
+                      aria-pressed={Boolean(item.urgent)}
+                      onClick={() => patchEvent(item.id, { urgent: !item.urgent || undefined })}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                        item.urgent ? "bg-ink text-sky" : "border border-ink/30 text-ink/70"
+                      }`}
+                    >
+                      {item.urgent ? "取消急" : "標成急"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="刪除這個事項"
+                    onClick={() => save({ events: events.filter((other) => other.id !== item.id) })}
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink/10 hover:bg-ink hover:text-sky"
+                  >
+                    ×
+                  </button>
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -372,6 +420,17 @@ export function CourseExtras({ course, onChange }: CourseExtrasProps) {
               ))}
             </select>
           </label>
+          {eventKind !== "exam" && (
+            <label className="flex w-fit items-center gap-2 text-xs font-black text-ink/70 dark:text-white/70">
+              <input
+                type="checkbox"
+                checked={eventUrgent}
+                onChange={(event) => setEventUrgent(event.target.checked)}
+                className="size-4 accent-red-700"
+              />
+              標成急(會排在首頁最上面)
+            </label>
+          )}
           {eventError && <p className="text-xs font-black text-red-700 dark:text-pink">{eventError}</p>}
           <div className="flex gap-2">
             <button

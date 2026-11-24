@@ -34,7 +34,8 @@ export function useClassReminders(schedule: Schedule, settings: AppSettings, ena
       });
     });
 
-    const cancelEventReminders = scheduleEventReminders(listEvents(schedule), now, (item) => {
+    const openEvents = listEvents(schedule).filter((item) => !item.event.done);
+    const cancelEventReminders = scheduleEventReminders(openEvents, now, (item) => {
       new Notification(`${EVENT_KIND_LABELS[item.event.kind]}提醒:${item.event.title || item.course.name}`, {
         body: `${item.course.name} · ${item.event.date}${item.allDay ? "" : ` ${item.event.time}`}`,
         tag: item.event.id,

@@ -52,6 +52,8 @@ export interface SemesterReview {
   skippedClasses: number;
   examCount: number;
   assignmentCount: number;
+  /** Assignments checked off as done. */
+  assignmentDoneCount: number;
   /** Null when nothing has been marked. */
   attendance: AttendanceReview | null;
 }
@@ -153,6 +155,7 @@ export function buildSemesterReview(schedule: Schedule, settings: AppSettings, n
     skippedClasses,
     examCount: events.filter((item) => item.event.kind === "exam").length,
     assignmentCount: events.filter((item) => item.event.kind === "assignment").length,
+    assignmentDoneCount: events.filter((item) => item.event.kind === "assignment" && item.event.done).length,
     attendance:
       marked === 0
         ? null
