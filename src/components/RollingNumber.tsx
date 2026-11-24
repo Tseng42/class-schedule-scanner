@@ -66,14 +66,20 @@ export function RollingNumber({ value, direction = "auto", className }: RollingN
     setPrevious(value);
   }
 
-  const chars = [...value];
-  return (
-    <span className={className}>
-      <span className="sr-only">{value}</span>
-      <span aria-hidden="true">
+  // Everything is keyed by its distance from the end, so the ones digit stays the
+  // ones digit when "10:00" becomes "9:59".
+  let remaining = [...value].length;
+  // Each run of non-space characters stays on one line: the digit boxes are
+  // inline-blocks, and a line could otherwise break between two of them mid-number.
+  const runs = (value.match(/\s+|\S+/gu) ?? []).map((run) => {
+    const chars = [...run];
+    const end = remaining - chars.length;
+    remaining = end;
+    if (/\s/u.test(run)) return <span key={`s${end}`}>{run}</span>;
+    return (
+      <span key={`w${end}`} className="whitespace-nowrap">
         {chars.map((char, index) => {
-          // Keyed from the right, so the ones digit stays the ones digit when "10:00" becomes "9:59".
-          const position = chars.length - 1 - index;
+          const position = end + chars.length - 1 - index;
           return /\d/.test(char) ? (
             <RollingDigit key={`d${position}`} char={char} rollsDown={rollsDown} />
           ) : (
@@ -81,6 +87,13 @@ export function RollingNumber({ value, direction = "auto", className }: RollingN
           );
         })}
       </span>
+    );
+  });
+
+  return (
+    <span className={className}>
+      <span className="sr-only">{value}</span>
+      <span aria-hidden="true">{runs}</span>
     </span>
   );
 }
