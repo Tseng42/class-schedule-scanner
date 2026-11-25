@@ -28,6 +28,7 @@ import { TOTAL_LEVELS } from "../services/achievements/achievements";
 import { SemesterSettings } from "../components/SemesterSettings";
 import { SemesterSwitch } from "../components/SemesterSwitch";
 import { ThemeSettings } from "../components/ThemeSettings";
+import { WallpaperSettings } from "../components/WallpaperSettings";
 import { applyTheme, findTheme } from "../lib/theme";
 import {
   ATTENDANCE_LIMIT_LABELS,
@@ -52,6 +53,7 @@ export type SettingsSection =
   | "holidays"
   | "theme"
   | "photo"
+  | "wallpaper"
   | "calendar"
   | "sync"
   | "backup"
@@ -192,6 +194,7 @@ export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: 
           title: "課表背景照片",
           status: hasPhoto === null ? undefined : hasPhoto ? "已設定" : "尚未設定",
         },
+        { section: "wallpaper", title: "課表桌布" },
       ],
     },
     {
@@ -265,6 +268,7 @@ export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: 
           )}
           {activeRow.section === "theme" && <ThemeSettings settings={settings} onChange={handleSettingsChange} />}
           {activeRow.section === "photo" && <BackgroundPhotoSettings onChange={setHasPhoto} />}
+          {activeRow.section === "wallpaper" && <WallpaperSettings schedule={schedule} settings={settings} />}
           {activeRow.section === "holidays" && (
             <HolidayEditor
               holidays={schedule.holidays ?? []}
