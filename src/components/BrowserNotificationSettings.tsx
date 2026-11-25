@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { currentNotificationState, type NotificationState } from "../lib/settingsStatus";
 import { formatDuration } from "../services/scheduling/nextClass";
+import { isAppBadgeSupported } from "../services/notifications/appBadge";
+import type { AppSettings } from "../schema/settings";
 
 function isStandaloneDisplayMode(): boolean {
   const nav = navigator as Navigator & { standalone?: boolean };
@@ -12,10 +14,13 @@ function isIos(): boolean {
 }
 
 interface BrowserNotificationSettingsProps {
-  reminderMinutes: number;
+  settings: AppSettings;
+  /** Called with the full updated settings; the parent persists them. */
+  onChange: (next: AppSettings) => void;
 }
 
-export function BrowserNotificationSettings({ reminderMinutes }: BrowserNotificationSettingsProps) {
+export function BrowserNotificationSettings({ settings, onChange }: BrowserNotificationSettingsProps) {
+  const reminderMinutes = settings.reminderMinutes;
   const [notificationState, setNotificationState] = useState<NotificationState>(currentNotificationState);
   const [notificationError, setNotificationError] = useState<string | null>(null);
   const [standalone] = useState(() => isStandaloneDisplayMode());
@@ -65,6 +70,24 @@ export function BrowserNotificationSettings({ reminderMinutes }: BrowserNotifica
         </button>
       )}
       {notificationError && <p className="card-error text-sm font-bold">{notificationError}</p>}
+
+      <div className="flex flex-col gap-2 border-t-2 border-ink/10 pt-4">
+        <label className="flex items-start gap-2 text-sm font-bold">
+          <input
+            type="checkbox"
+            checked={settings.appBadge !== false}
+            onChange={(event) => onChange({ ...settings, appBadge: event.target.checked })}
+            className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
+          />
+          <span>App 圖示顯示紅色數字(今天到期和逾期、還沒打勾的作業)</span>
+        </label>
+        <p className="text-xs font-bold opacity-70">
+          {isAppBadgeSupported()
+            ? "數字只在打開 App 的時候更新,App 關著時會停在最後一次打開的數字。"
+            : "這個瀏覽器不支援 App 圖示數字。"}
+          iPhone 要 iOS 16.4 以上、加到主畫面,而且要先開啟上面的通知才會出現;Android 不支援數字。
+        </p>
+      </div>
     </>
   );
 }

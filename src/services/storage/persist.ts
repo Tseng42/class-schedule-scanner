@@ -7,10 +7,15 @@ export class StorageWriteError extends Error {
   }
 }
 
+/** Fired on window after every successful write, for things that mirror saved data (the icon badge). */
+export const STORAGE_CHANGED_EVENT = "class-schedule-scanner:storage-changed";
+
 export function writeJSON(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
     throw new StorageWriteError(error);
   }
+  window.dispatchEvent(new Event(STORAGE_CHANGED_EVENT));
 }
+

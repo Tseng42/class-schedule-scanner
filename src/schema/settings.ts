@@ -23,6 +23,8 @@ export const appSettingsSchema = z.object({
   focusMinutes: z.number().int().positive().optional(),
   breakMinutes: z.number().int().positive().optional(),
   longBreakMinutes: z.number().int().positive().optional(),
+  /** Red number on the home-screen icon for to-dos due today or overdue. Absent means on. */
+  appBadge: z.boolean().optional(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 

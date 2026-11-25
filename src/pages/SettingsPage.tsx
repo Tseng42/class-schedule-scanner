@@ -230,7 +230,7 @@ export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: 
             <LineReminderSettings settings={settings} onChange={handleSettingsChange} />
           )}
           {activeRow.section === "notifications" && (
-            <BrowserNotificationSettings reminderMinutes={settings.reminderMinutes} />
+            <BrowserNotificationSettings settings={settings} onChange={handleSettingsChange} />
           )}
           {activeRow.section === "semester" && (
             <>

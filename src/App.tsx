@@ -5,6 +5,7 @@ import { SettingsPage, type SettingsSection } from "./pages/SettingsPage";
 import { ManageCoursesPage } from "./pages/ManageCoursesPage";
 import { useSwipeNavigation, type DragProgress } from "./hooks/useSwipeNavigation";
 import { useAppUpdate } from "./hooks/useAppUpdate";
+import { useAppBadge } from "./hooks/useAppBadge";
 import { TitleBarSlotContext } from "./lib/titleBarSlot";
 
 type View = "home" | "add" | "manage" | "settings";
@@ -36,6 +37,7 @@ function App() {
   const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
   const [addStartMode, setAddStartMode] = useState<AddCourseMode | null>(null);
   const updateReady = useAppUpdate();
+  useAppBadge();
   const contentRef = useRef<HTMLDivElement>(null);
   const [titleBarSlot, setTitleBarSlot] = useState<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
