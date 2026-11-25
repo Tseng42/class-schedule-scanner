@@ -176,13 +176,19 @@ function mergeFocusSessions(local: Schedule["focusSessions"], cloud: Schedule["f
   return { ...cloud, ...local };
 }
 
-/** Past semesters are never edited, so every one either side has is kept. */
+/** Every past semester either side has is kept; when both have one, the later credits edit wins. */
 function mergePastSemesters(
   local: Schedule["pastSemesters"],
   cloud: Schedule["pastSemesters"],
 ): Schedule["pastSemesters"] {
   if (!local && !cloud) return undefined;
-  return { ...cloud, ...local };
+  const merged = { ...cloud };
+  for (const [id, semester] of Object.entries(local ?? {})) {
+    const existing = merged[id];
+    const editedAt = (item: typeof semester) => item.updatedAt ?? item.archivedAt;
+    if (!existing || editedAt(semester) > editedAt(existing)) merged[id] = semester;
+  }
+  return merged;
 }
 
 /**

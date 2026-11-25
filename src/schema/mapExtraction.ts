@@ -1,4 +1,4 @@
-import type { Course, DayOfWeek, Recurrence, TimeSlot } from "./course";
+import { MAX_CREDITS, type Course, type DayOfWeek, type Recurrence, type TimeSlot } from "./course";
 import type { ExtractionResult } from "./extraction";
 import { generateId } from "../lib/id";
 
@@ -16,6 +16,8 @@ export interface CourseDraft {
   name: string;
   teacher: string;
   location: string;
+  /** As typed; blank means not filled in. */
+  credits: string;
   timeSlots: TimeSlotDraft[];
   recurrenceType: RecurrenceType;
   /** Only meaningful when recurrenceType is "once", format YYYY-MM-DD. */
@@ -33,6 +35,7 @@ export function blankCourseDraft(): CourseDraft {
     name: "",
     teacher: "",
     location: "",
+    credits: "",
     timeSlots: [newTimeSlotDraft()],
     recurrenceType: "weekly",
     onceDate: "",
@@ -45,6 +48,7 @@ export function extractionToDrafts(result: ExtractionResult): CourseDraft[] {
     name: course.name,
     teacher: course.teacher ?? "",
     location: course.location ?? "",
+    credits: "",
     timeSlots: course.timeSlots.map((slot) => ({
       localId: generateId(),
       dayOfWeek: slot.dayOfWeek,
@@ -62,6 +66,7 @@ export function courseToDraft(course: Course): CourseDraft {
     name: course.name,
     teacher: course.teacher ?? "",
     location: course.location ?? "",
+    credits: course.credits === undefined ? "" : String(course.credits),
     timeSlots: course.timeSlots.map((slot) => ({
       localId: slot.id,
       dayOfWeek: slot.dayOfWeek,
@@ -77,6 +82,14 @@ function draftRecurrence(draft: CourseDraft): Recurrence {
   return draft.recurrenceType === "once" ? { type: "once", date: draft.onceDate } : { type: "weekly" };
 }
 
+/** The credits typed in, or undefined when blank or not a whole number in range (validateDraft reports that). */
+export function parseCredits(text: string): number | undefined {
+  const trimmed = text.trim();
+  if (!/^\d{1,2}$/.test(trimmed)) return undefined;
+  const value = Number(trimmed);
+  return value <= MAX_CREDITS ? value : undefined;
+}
+
 /** Returns a human-readable problem with this draft, or null if it's ready to save. */
 export function validateDraft(draft: CourseDraft): string | null {
   if (draft.name.trim() === "") return "請填課程名稱";
@@ -85,6 +98,7 @@ export function validateDraft(draft: CourseDraft): string | null {
     if (slot.startTime >= slot.endTime) return "結束時間要晚於開始時間";
   }
   if (draft.recurrenceType === "once" && !draft.onceDate) return "請選擇日期";
+  if (draft.credits.trim() !== "" && parseCredits(draft.credits) === undefined) return `學分請填 0–${MAX_CREDITS} 的整數`;
   return null;
 }
 
@@ -102,6 +116,7 @@ export function draftsToCourses(drafts: CourseDraft[]): Course[] {
       name: draft.name.trim(),
       teacher: draft.teacher.trim() || undefined,
       location: draft.location.trim() || undefined,
+      credits: parseCredits(draft.credits),
       timeSlots,
       recurrence: draftRecurrence(draft),
       createdAt: timestamp,
@@ -123,6 +138,7 @@ export function draftToCourse(draft: CourseDraft, original: Course): Course {
     name: draft.name.trim(),
     teacher: draft.teacher.trim() || undefined,
     location: draft.location.trim() || undefined,
+    credits: parseCredits(draft.credits),
     timeSlots,
     recurrence: draftRecurrence(draft),
     updatedAt: new Date().toISOString(),

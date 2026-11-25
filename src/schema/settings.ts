@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const DEFAULT_LINE_DAILY_TIME = "07:00";
+/** The minimum for a four-year bachelor's degree under 大學法施行細則; many departments ask for exactly this. */
+export const DEFAULT_GRADUATION_CREDITS = 128;
 
 export const appSettingsSchema = z.object({
   reminderMinutes: z.number().int().positive().default(10),
@@ -25,6 +27,8 @@ export const appSettingsSchema = z.object({
   longBreakMinutes: z.number().int().positive().optional(),
   /** Red number on the home-screen icon for to-dos due today or overdue. Absent means on. */
   appBadge: z.boolean().optional(),
+  /** Credits needed to graduate, for the progress bar on 所有課程. Absent means 128. */
+  graduationCredits: z.number().int().positive().optional(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 

@@ -42,6 +42,8 @@ export const pastSemesterSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   archivedAt: z.string(),
+  /** Last time its credits were filled in, the only thing that can change; the later copy wins when syncing. */
+  updatedAt: z.string().optional(),
   courses: z.array(courseSchema),
   attendance: z.record(z.string(), attendanceRecordSchema).optional(),
   holidays: z.array(holidaySchema).optional(),

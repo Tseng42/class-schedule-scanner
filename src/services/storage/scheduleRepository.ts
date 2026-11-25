@@ -80,6 +80,25 @@ export function replaceSchedule(schedule: Schedule): Schedule {
   return updated;
 }
 
+/** Fills in a past semester's course credits: the one thing a past semester lets you change. */
+export function setPastCourseCredits(semesterId: string, courseId: string, credits: number | undefined): Schedule {
+  const current = loadSchedule();
+  const semester = current.pastSemesters?.[semesterId];
+  if (!semester) throw new Error("找不到這個學期");
+  const courses = semester.courses.map((course) => {
+    if (course.id !== courseId) return course;
+    const { credits: _old, ...rest } = course;
+    return credits === undefined ? rest : { ...rest, credits };
+  });
+  const updated: Schedule = {
+    ...current,
+    pastSemesters: { ...current.pastSemesters, [semesterId]: { ...semester, courses, updatedAt: now() } },
+  };
+  persist(updated);
+  requestSync("schedule");
+  return updated;
+}
+
 export interface SwitchSemesterInput {
   /** Courses carried into the new semester, with only their name, teacher, room and times. */
   keepCourseIds: string[];
@@ -120,6 +139,7 @@ export function switchSemester({ keepCourseIds, oldStartDate, oldEndDate }: Swit
       updatedAt: at,
     };
     if (course.teacher) carried.teacher = course.teacher;
+    if (course.credits !== undefined) carried.credits = course.credits;
     if (course.location) carried.location = course.location;
     courses.push(carried);
   }

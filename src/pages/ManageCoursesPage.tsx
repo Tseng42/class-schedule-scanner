@@ -13,7 +13,8 @@ import { addCourses, loadSchedule, removeCourse, updateCourse } from "../service
 import { CourseDraftForm } from "../components/CourseDraftForm";
 import { CourseExtras } from "../components/CourseExtras";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { loadSettings } from "../services/storage/settingsRepository";
+import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
+import { CreditSummary } from "../components/CreditSummary";
 import { summarizeAttendance, type AttendanceSummary } from "../services/scheduling/attendance";
 import { focusMinutesByCourse, focusSessionsBetween, formatFocusTime } from "../services/focus/focusTimer";
 
@@ -60,6 +61,7 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
   );
   // Focus time is logged on the home page too, so the same snapshot is current.
   const [focusByCourse] = useState(() => focusMinutesByCourse(focusSessionsBetween(attendanceContext.schedule)));
+  const [creditSettings, setCreditSettings] = useState(() => loadSettings());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CourseDraft | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -164,9 +166,22 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
         )}
       </header>
 
-      {storageError && (
-        <div className="rounded-3xl bg-pink p-4 text-sm font-bold text-ink">{storageError}</div>
-      )}
+      {storageError && <div className="rounded-3xl bg-pink p-4 text-sm font-bold text-ink">{storageError}</div>}
+
+      <CreditSummary
+        courses={courses}
+        pastSemesters={attendanceContext.schedule.pastSemesters}
+        settings={creditSettings}
+        onChangeGoal={(graduationCredits) => {
+          // Read fresh: the snapshot above may be stale if settings changed on another device since.
+          const next = { ...loadSettings(), graduationCredits };
+          const saved = withStorageErrorHandling(() => {
+            saveSettings(next);
+            return true;
+          });
+          if (saved) setCreditSettings(next);
+        }}
+      />
 
       {isAddingNew && draft && (
         <CourseDraftForm
@@ -199,10 +214,15 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-black text-ink dark:text-white">{course.name}</p>
-                  <p className="mt-1 text-xs font-bold text-ink/60 dark:text-white/60">
-                    {describeSchedule(course)}
+                  <p className="font-black text-ink dark:text-white">
+                    {course.name}
+                    {course.credits !== undefined && (
+                      <span className="ml-2 text-xs font-bold text-ink/60 dark:text-white/60">
+                        {course.credits} 學分
+                      </span>
+                    )}
                   </p>
+                  <p className="mt-1 text-xs font-bold text-ink/60 dark:text-white/60">{describeSchedule(course)}</p>
                   {(course.teacher || course.location) && (
                     <p className="mt-1 text-xs font-bold text-ink/60 dark:text-white/60">
                       {[course.teacher, course.location].filter(Boolean).join(" · ")}

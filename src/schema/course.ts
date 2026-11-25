@@ -98,6 +98,8 @@ const notesField = z.preprocess((value) => {
   return value;
 }, z.array(noteSchema).optional());
 
+export const MAX_CREDITS = 20;
+
 export const courseSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -108,6 +110,8 @@ export const courseSchema = z.object({
   notes: notesField,
   cancellations: z.array(cancellationSchema).optional(),
   events: z.array(courseEventSchema).optional(),
+  /** 學分. 0 is real: 體育、軍訓 and the like often carry none. Absent means not filled in. */
+  credits: z.number().int().min(0).max(MAX_CREDITS).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

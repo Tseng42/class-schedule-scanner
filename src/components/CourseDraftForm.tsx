@@ -92,20 +92,29 @@ export function CourseDraftForm({ draft, onChange, onSave, onCancel, existingCou
         className="w-full rounded-xl border-2 border-ink/15 px-3 py-1.5 text-sm font-black text-ink focus:border-ink focus:outline-none dark:border-white/20 dark:bg-transparent dark:text-white dark:focus:border-white"
       />
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="mt-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_4.5rem] gap-2">
         <input
           type="text"
           value={draft.teacher}
           onChange={(event) => updateField("teacher", event.target.value)}
           placeholder="教師(選填)"
-          className="rounded-xl border-2 border-ink/15 px-3 py-1.5 text-sm font-bold text-ink focus:border-ink focus:outline-none dark:border-white/20 dark:bg-transparent dark:text-white dark:focus:border-white"
+          className="min-w-0 rounded-xl border-2 border-ink/15 px-3 py-1.5 text-sm font-bold text-ink focus:border-ink focus:outline-none dark:border-white/20 dark:bg-transparent dark:text-white dark:focus:border-white"
         />
         <input
           type="text"
           value={draft.location}
           onChange={(event) => updateField("location", event.target.value)}
           placeholder="地點(選填)"
-          className="rounded-xl border-2 border-ink/15 px-3 py-1.5 text-sm font-bold text-ink focus:border-ink focus:outline-none dark:border-white/20 dark:bg-transparent dark:text-white dark:focus:border-white"
+          className="min-w-0 rounded-xl border-2 border-ink/15 px-3 py-1.5 text-sm font-bold text-ink focus:border-ink focus:outline-none dark:border-white/20 dark:bg-transparent dark:text-white dark:focus:border-white"
+        />
+        <input
+          type="text"
+          inputMode="numeric"
+          value={draft.credits}
+          onChange={(event) => onChange({ ...draft, credits: event.target.value })}
+          placeholder="學分"
+          aria-label="學分(選填)"
+          className="min-w-0 rounded-xl border-2 border-ink/15 px-3 py-1.5 text-sm font-bold text-ink focus:border-ink focus:outline-none dark:border-white/20 dark:bg-transparent dark:text-white dark:focus:border-white"
         />
       </div>
 

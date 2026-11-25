@@ -6,6 +6,7 @@ import {
   addHolidays,
   loadSchedule,
   removeHoliday,
+  setPastCourseCredits,
   switchSemester,
 } from "../services/storage/scheduleRepository";
 import { OFFICIAL_HOLIDAYS_TW } from "../data/officialHolidays";
@@ -226,9 +227,7 @@ export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: 
           {activeRow.section === "reminder" && (
             <ReminderTimeSettings settings={settings} onChange={handleSettingsChange} />
           )}
-          {activeRow.section === "line" && (
-            <LineReminderSettings settings={settings} onChange={handleSettingsChange} />
-          )}
+          {activeRow.section === "line" && <LineReminderSettings settings={settings} onChange={handleSettingsChange} />}
           {activeRow.section === "notifications" && (
             <BrowserNotificationSettings settings={settings} onChange={handleSettingsChange} />
           )}
@@ -242,7 +241,16 @@ export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: 
               />
             </>
           )}
-          {activeRow.section === "pastSemesters" && <PastSemesters schedule={schedule} settings={settings} />}
+          {activeRow.section === "pastSemesters" && (
+            <PastSemesters
+              schedule={schedule}
+              settings={settings}
+              onSetCredits={(semesterId, courseId, credits) => {
+                const updated = withStorageErrorHandling(() => setPastCourseCredits(semesterId, courseId, credits));
+                if (updated) setSchedule(updated);
+              }}
+            />
+          )}
           {activeRow.section === "attendanceLimit" && (
             <AttendanceLimitSettings settings={settings} onChange={handleSettingsChange} />
           )}
