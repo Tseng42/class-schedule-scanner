@@ -293,6 +293,16 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const showNudge = hasReview && isReviewSeason(settings, now) && dismissedNudge !== settings.semesterEndDate;
   const showReviewCard = hasReview && semester?.kind !== "during";
 
+  const focusCard = (
+    <FocusCard
+      run={focus.run}
+      courseName={focusCourseName}
+      todayMinutes={todayFocusMinutes}
+      onStart={() => setFocusSetupLengths(focusLengthsFrom(loadSettings()))}
+      onOpen={openFocusScreen}
+    />
+  );
+
   const stripCardClass =
     "min-w-0 flex-1 rounded-2xl border-2 border-ink/10 bg-white p-3.5 text-ink dark:border-white/10 dark:bg-white/5 dark:text-white";
   const stripLabelClass = "text-xs font-black text-ink/60 dark:text-white/60";
@@ -411,13 +421,8 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         </div>
       )}
 
-      <FocusCard
-        run={focus.run}
-        courseName={focusCourseName}
-        todayMinutes={todayFocusMinutes}
-        onStart={() => setFocusSetupLengths(focusLengthsFrom(loadSettings()))}
-        onOpen={openFocusScreen}
-      />
+      {/* While a timer runs it sits up here, so the time left is in view; otherwise it waits at the bottom. */}
+      {focus.run && focusCard}
 
       <ExamCountdown
         exams={examCountdown}
@@ -500,6 +505,8 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
           )}
         </div>
       )}
+
+      {!focus.run && focusCard}
 
       {prepCourse && prepExam && (
         <ExamPrepSheet

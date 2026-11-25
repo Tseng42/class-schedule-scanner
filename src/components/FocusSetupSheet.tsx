@@ -84,7 +84,7 @@ export function FocusSetupSheet({ courses, lengths, onStart, onClose }: FocusSet
         className="flex max-h-[85vh] w-full max-w-sm flex-col overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-5 outline-none dark:border-white/20 dark:bg-ink"
       >
         <p id="focus-setup-title" className="text-lg font-black text-ink dark:text-white">
-          專注計時
+          專注模式
         </p>
 
         <p id="focus-course-label" className="mt-4 text-sm font-black text-ink dark:text-white">
@@ -149,7 +149,7 @@ export function FocusSetupSheet({ courses, lengths, onStart, onClose }: FocusSet
           onClick={() => onStart(parsed as FocusLengths, courseId)}
           className="mt-5 rounded-full bg-ink px-5 py-3 text-base font-black text-lime transition-transform active:scale-95 disabled:opacity-40 dark:bg-lime dark:text-ink"
         >
-          開始專注
+          開始
         </button>
         <p className="mt-3 text-xs font-bold text-ink/60 dark:text-white/60">
           iPhone 鎖螢幕或切到別的 App 時,時間到不一定會響;回到這裡時間會是對的。計時中會盡量讓螢幕保持亮著。

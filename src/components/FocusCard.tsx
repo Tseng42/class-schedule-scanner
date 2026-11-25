@@ -11,7 +11,7 @@ interface FocusCardProps {
   onOpen: (source: HTMLElement) => void;
 }
 
-/** The home screen's way into 專注計時: a start button, or the running timer at a glance. */
+/** The home screen's way into 專注模式: a start button, or the running timer at a glance. */
 export function FocusCard({ run, courseName, todayMinutes, onStart, onOpen }: FocusCardProps) {
   const now = useTicker(run !== null && run.phase !== "breakDone");
 
@@ -19,7 +19,7 @@ export function FocusCard({ run, courseName, todayMinutes, onStart, onOpen }: Fo
     return (
       <section className="flex items-center gap-3 rounded-3xl border-2 border-ink/10 bg-white py-3 pr-3 pl-4 text-ink dark:border-white/10 dark:bg-white/5 dark:text-white">
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-black">專注計時</h2>
+          <h2 className="text-sm font-black">專注模式</h2>
           <p className="mt-0.5 text-xs font-bold text-ink/60 dark:text-white/60">
             {todayMinutes > 0 ? (
               <>
@@ -36,7 +36,7 @@ export function FocusCard({ run, courseName, todayMinutes, onStart, onOpen }: Fo
           onClick={onStart}
           className="shrink-0 rounded-full bg-ink px-4 py-2.5 text-sm font-black text-lime transition-transform active:scale-95 dark:bg-lime dark:text-ink"
         >
-          開始專注
+          開始
         </button>
       </section>
     );
