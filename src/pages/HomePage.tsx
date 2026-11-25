@@ -22,6 +22,8 @@ import { AchievementToast } from "../components/AchievementToast";
 import { badgeProgress, reachedLevels } from "../services/achievements/achievements";
 import { recordAchievements } from "../services/storage/scheduleRepository";
 import { formatDateRange } from "../lib/formatDate";
+import { WeeklyReviewCard } from "../components/WeeklyReviewCard";
+import { buildWeeklyReview, isWeeklyReviewDay } from "../services/scheduling/weeklyReview";
 import type { Course, PrepItem } from "../schema/course";
 import type { AttendanceStatus, Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
@@ -116,6 +118,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   const [prepFor, setPrepFor] = useState<{ courseId: string; eventId: string } | null>(null);
   const [openReview, setOpenReview] = useState<SemesterReview | null>(null);
   const [dismissedNudge, setDismissedNudge] = useState(readDismissedNudge);
+  const [weeklyDismissed, setWeeklyDismissed] = useState(() => settings.weeklyReviewDismissed);
   const [focusSetupLengths, setFocusSetupLengths] = useState<FocusLengths | null>(null);
   const [focusScreenOpen, setFocusScreenOpen] = useState(false);
   const focus = useFocusTimer(setSchedule);
@@ -145,6 +148,11 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
   // 成就徽章: recounted when anything is marked or checked off, and once a day.
   const reached = useMemo(
     () => reachedLevels(badgeProgress(schedule, settings, new Date(`${dateKey}T23:59:59`))),
+    [schedule, settings, dateKey],
+  );
+  // Last week is over by the time it's shown, so once a day is enough.
+  const weeklyReviewOfDay = useMemo(
+    () => buildWeeklyReview(schedule, settings, new Date(`${dateKey}T00:00:00`)),
     [schedule, settings, dateKey],
   );
   const [newBadges, setNewBadges] = useState<string[] | null>(null);
@@ -242,6 +250,15 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     }
   };
 
+  const dismissWeekly = (weekKey: string) => {
+    setWeeklyDismissed(weekKey);
+    try {
+      saveSettings({ ...loadSettings(), weeklyReviewDismissed: weekKey });
+    } catch {
+      // Only means the card comes back next visit.
+    }
+  };
+
   const handleToggleDone = (item: ScheduledEvent) => {
     const done = !item.event.done;
     try {
@@ -311,6 +328,8 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
 
   const showNudge = hasReview && isReviewSeason(settings, now) && dismissedNudge !== settings.semesterEndDate;
   const showReviewCard = hasReview && semester?.kind !== "during";
+  const weeklyReview = isWeeklyReviewDay(now) ? weeklyReviewOfDay : null;
+  const showWeekly = weeklyReview !== null && weeklyDismissed !== weeklyReview.weekKey;
 
   const focusCard = (
     <FocusCard
@@ -355,6 +374,10 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
             ×
           </button>
         </section>
+      )}
+
+      {showWeekly && weeklyReview && (
+        <WeeklyReviewCard review={weeklyReview} onDismiss={() => dismissWeekly(weeklyReview.weekKey)} />
       )}
 
       {nearLimit.length > 0 && (

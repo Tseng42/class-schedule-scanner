@@ -32,6 +32,8 @@ export const appSettingsSchema = z.object({
   graduationCredits: z.number().int().positive().optional(),
   /** 及格線 for 成績計算. Absent means 60, the usual line for undergraduates. */
   passingScore: z.number().min(1).max(100).optional(),
+  /** Monday key of the week whose 每週小回顧 card was put away; synced so it stays away on every device. */
+  weeklyReviewDismissed: z.string().optional(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 
