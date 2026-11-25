@@ -62,7 +62,7 @@ export function HolidayEditor({ holidays, onAdd, onRemove, onAddOfficial }: Holi
           onClick={handleAddOfficial}
           className="self-start rounded-full border-2 border-ink px-4 py-2 text-xs font-black text-ink transition-transform active:scale-95"
         >
-          一鍵加入台灣 2026 國定假日
+          一鍵加入台灣 2026–2027 國定假日
         </button>
         {officialFlash && <span className="text-xs font-black">{officialFlash}</span>}
       </div>

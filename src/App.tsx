@@ -265,6 +265,7 @@ function App() {
               section={settingsSection}
               onOpenSection={openSettingsSection}
               onBack={closeSettingsSection}
+              onNavigateAdd={() => navigateTo("add")}
             />
           )}
         </div>

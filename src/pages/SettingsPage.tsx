@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { LargeTitle } from "../components/LargeTitle";
 import type { User } from "firebase/auth";
-import { addHoliday, addHolidays, loadSchedule, removeHoliday } from "../services/storage/scheduleRepository";
-import { OFFICIAL_HOLIDAYS_TW_2026 } from "../data/officialHolidays";
+import {
+  addHoliday,
+  addHolidays,
+  loadSchedule,
+  removeHoliday,
+  switchSemester,
+} from "../services/storage/scheduleRepository";
+import { OFFICIAL_HOLIDAYS_TW } from "../data/officialHolidays";
 import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
 import { hasActiveStoredApiKey } from "../services/ai";
 import { ApiKeySettings } from "../components/ApiKeySettings";
@@ -15,7 +21,9 @@ import { CloudSyncSettings } from "../components/CloudSyncSettings";
 import { HolidayEditor } from "../components/HolidayEditor";
 import { LineReminderSettings } from "../components/LineReminderSettings";
 import { ReminderTimeSettings } from "../components/ReminderTimeSettings";
+import { PastSemesters } from "../components/PastSemesters";
 import { SemesterSettings } from "../components/SemesterSettings";
+import { SemesterSwitch } from "../components/SemesterSwitch";
 import { ThemeSettings } from "../components/ThemeSettings";
 import { applyTheme, findTheme } from "../lib/theme";
 import {
@@ -35,6 +43,7 @@ export type SettingsSection =
   | "line"
   | "notifications"
   | "semester"
+  | "pastSemesters"
   | "attendanceLimit"
   | "holidays"
   | "theme"
@@ -60,9 +69,11 @@ interface SettingsPageProps {
   section: SettingsSection | null;
   onOpenSection: (section: SettingsSection) => void;
   onBack: () => void;
+  /** Where 換學期 ends: adding the new semester's courses. */
+  onNavigateAdd: () => void;
 }
 
-export function SettingsPage({ section, onOpenSection, onBack }: SettingsPageProps) {
+export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: SettingsPageProps) {
   const [schedule, setSchedule] = useState(() => loadSchedule());
   const [settings, setSettings] = useState(() => loadSettings());
   const [storageError, setStorageError] = useState<string | null>(null);
@@ -102,6 +113,21 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
     }
   };
 
+  const handleSwitchSemester = (input: { keepCourseIds: string[]; startDate: string; endDate: string }) => {
+    const done = withStorageErrorHandling(() => {
+      switchSemester({
+        keepCourseIds: input.keepCourseIds,
+        oldStartDate: settings.semesterStartDate,
+        oldEndDate: settings.semesterEndDate,
+      });
+      saveSettings({ ...settings, semesterStartDate: input.startDate, semesterEndDate: input.endDate });
+      return true;
+    });
+    if (done) onNavigateAdd();
+  };
+
+  const pastSemesterCount = Object.keys(schedule.pastSemesters ?? {}).length;
+
   const handleRestored = (restoredSchedule: Schedule, restoredSettings: AppSettings) => {
     setSchedule(restoredSchedule);
     setSettings(restoredSettings);
@@ -131,6 +157,9 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
       colorClass: "bg-pink",
       rows: [
         { section: "semester", title: "學期範圍", status: formatSemesterRange(settings) },
+        ...(pastSemesterCount > 0
+          ? [{ section: "pastSemesters" as const, title: "過去的學期", status: `${pastSemesterCount} 個` }]
+          : []),
         {
           section: "attendanceLimit",
           title: "扣考門檻",
@@ -204,8 +233,16 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
             <BrowserNotificationSettings reminderMinutes={settings.reminderMinutes} />
           )}
           {activeRow.section === "semester" && (
-            <SemesterSettings settings={settings} onChange={handleSettingsChange} />
+            <>
+              <SemesterSettings settings={settings} onChange={handleSettingsChange} />
+              <SemesterSwitch
+                courses={schedule.courses}
+                attendanceCount={Object.keys(schedule.attendance ?? {}).length}
+                onSwitch={handleSwitchSemester}
+              />
+            </>
           )}
+          {activeRow.section === "pastSemesters" && <PastSemesters schedule={schedule} settings={settings} />}
           {activeRow.section === "attendanceLimit" && (
             <AttendanceLimitSettings settings={settings} onChange={handleSettingsChange} />
           )}
@@ -223,7 +260,7 @@ export function SettingsPage({ section, onOpenSection, onBack }: SettingsPagePro
                 if (updated) setSchedule(updated);
               }}
               onAddOfficial={() => {
-                const result = withStorageErrorHandling(() => addHolidays(OFFICIAL_HOLIDAYS_TW_2026));
+                const result = withStorageErrorHandling(() => addHolidays(OFFICIAL_HOLIDAYS_TW));
                 if (!result) return null;
                 setSchedule(result.schedule);
                 return { addedCount: result.addedCount, skippedCount: result.skippedCount };

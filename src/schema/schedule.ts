@@ -32,6 +32,22 @@ export const focusSessionSchema = z.object({
 });
 export type FocusSession = z.infer<typeof focusSessionSchema>;
 
+/**
+ * A semester put away by 換學期: everything its review needs, frozen. Read-only —
+ * it can be looked back on and shared, never restored or edited.
+ */
+export const pastSemesterSchema = z.object({
+  id: z.string(),
+  /** The semester's dates as set when it was put away; absent if they never were. */
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  archivedAt: z.string(),
+  courses: z.array(courseSchema),
+  attendance: z.record(z.string(), attendanceRecordSchema).optional(),
+  holidays: z.array(holidaySchema).optional(),
+});
+export type PastSemester = z.infer<typeof pastSemesterSchema>;
+
 export const scheduleSchema = z.object({
   version: z.literal(1),
   courses: z.array(courseSchema),
@@ -47,6 +63,13 @@ export const scheduleSchema = z.object({
   attendance: z.record(z.string(), attendanceRecordSchema).optional(),
   /** Session id (see focusSessionId) → the session. */
   focusSessions: z.record(z.string(), focusSessionSchema).optional(),
+  /** Semester id → the semester, put away by 換學期. Never edited, so syncing just keeps every one. */
+  pastSemesters: z.record(z.string(), pastSemesterSchema).optional(),
+  /**
+   * When 換學期 last ran. Attendance marked before it belongs to the old semester, so
+   * other devices drop their copies of it instead of syncing it back.
+   */
+  semesterSwitchedAt: z.string().optional(),
 });
 export type Schedule = z.infer<typeof scheduleSchema>;
 

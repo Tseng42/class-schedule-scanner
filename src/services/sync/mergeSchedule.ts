@@ -145,19 +145,42 @@ function mergeHolidays(local: Holiday[], cloud: Holiday[], tombstones: Tombstone
   });
 }
 
-/** Per class meeting, the later mark wins; on a tie, the cloud's. */
-function mergeAttendance(local: Schedule["attendance"], cloud: Schedule["attendance"]): Schedule["attendance"] {
+/**
+ * Per class meeting, the later mark wins; on a tie, the cloud's. Marks made before the
+ * last 換學期 belong to the semester that was put away and are dropped.
+ */
+function mergeAttendance(
+  local: Schedule["attendance"],
+  cloud: Schedule["attendance"],
+  switchedAt: string | undefined,
+): Schedule["attendance"] {
   if (!local && !cloud) return undefined;
   const merged = { ...cloud };
   for (const [key, record] of Object.entries(local ?? {})) {
     const existing = merged[key];
     if (!existing || record.updatedAt > existing.updatedAt) merged[key] = record;
   }
-  return merged;
+  if (!switchedAt) return merged;
+  return Object.fromEntries(Object.entries(merged).filter(([, record]) => record.updatedAt > switchedAt));
+}
+
+function laterOf(a: string | undefined, b: string | undefined): string | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return a > b ? a : b;
 }
 
 /** Focus sessions are only ever added, so every one either side has is kept. */
 function mergeFocusSessions(local: Schedule["focusSessions"], cloud: Schedule["focusSessions"]): Schedule["focusSessions"] {
+  if (!local && !cloud) return undefined;
+  return { ...cloud, ...local };
+}
+
+/** Past semesters are never edited, so every one either side has is kept. */
+function mergePastSemesters(
+  local: Schedule["pastSemesters"],
+  cloud: Schedule["pastSemesters"],
+): Schedule["pastSemesters"] {
   if (!local && !cloud) return undefined;
   return { ...cloud, ...local };
 }
@@ -179,10 +202,14 @@ export function mergeSchedules(local: Schedule, cloud: Schedule, options: MergeO
   if (holidays.length > 0 || local.holidays || cloud.holidays) schedule.holidays = holidays;
   if (Object.keys(deletedCourses).length > 0) schedule.deletedCourses = deletedCourses;
   if (Object.keys(deletedHolidays).length > 0) schedule.deletedHolidays = deletedHolidays;
-  const attendance = mergeAttendance(local.attendance, cloud.attendance);
+  const semesterSwitchedAt = laterOf(local.semesterSwitchedAt, cloud.semesterSwitchedAt);
+  if (semesterSwitchedAt) schedule.semesterSwitchedAt = semesterSwitchedAt;
+  const attendance = mergeAttendance(local.attendance, cloud.attendance, semesterSwitchedAt);
   if (attendance) schedule.attendance = attendance;
   const focusSessions = mergeFocusSessions(local.focusSessions, cloud.focusSessions);
   if (focusSessions) schedule.focusSessions = focusSessions;
+  const pastSemesters = mergePastSemesters(local.pastSemesters, cloud.pastSemesters);
+  if (pastSemesters) schedule.pastSemesters = pastSemesters;
 
   const localCourseIds = new Set(local.courses.map((course) => course.id));
   const resultCourseIds = new Set(courses.map((course) => course.id));

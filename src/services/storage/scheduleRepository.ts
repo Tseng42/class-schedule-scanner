@@ -4,6 +4,7 @@ import {
   type AttendanceStatus,
   type FocusSession,
   type Holiday,
+  type PastSemester,
   type Schedule,
 } from "../../schema/schedule";
 import type { Course, CourseEvent } from "../../schema/course";
@@ -69,7 +70,70 @@ export function replaceSchedule(schedule: Schedule): Schedule {
   if (current.focusSessions || restored.focusSessions) {
     updated.focusSessions = { ...current.focusSessions, ...restored.focusSessions };
   }
+  // Past semesters are kept the same way: syncing would bring back any a restore left out.
+  if (current.pastSemesters || restored.pastSemesters) {
+    updated.pastSemesters = { ...current.pastSemesters, ...restored.pastSemesters };
+  }
+  const switchedAt = [current.semesterSwitchedAt, restored.semesterSwitchedAt].filter(Boolean).sort().pop();
+  if (switchedAt) updated.semesterSwitchedAt = switchedAt;
   persist(updated);
+  return updated;
+}
+
+export interface SwitchSemesterInput {
+  /** Courses carried into the new semester, with only their name, teacher, room and times. */
+  keepCourseIds: string[];
+  /** The semester being put away, as set in settings. */
+  oldStartDate?: string;
+  oldEndDate?: string;
+}
+
+/**
+ * 換學期: puts the whole current semester away as a read-only past semester, then starts
+ * the new one with only the kept courses, stripped back to name, teacher, room and times.
+ * Every other course and all attendance are cleared; holidays and focus sessions stay.
+ */
+export function switchSemester({ keepCourseIds, oldStartDate, oldEndDate }: SwitchSemesterInput): Schedule {
+  const current = loadSchedule();
+  const at = now();
+  const keep = new Set(keepCourseIds);
+
+  const past: PastSemester = { id: generateId(), archivedAt: at, courses: current.courses };
+  if (oldStartDate) past.startDate = oldStartDate;
+  if (oldEndDate) past.endDate = oldEndDate;
+  if (current.attendance && Object.keys(current.attendance).length > 0) past.attendance = current.attendance;
+  if (current.holidays && current.holidays.length > 0) past.holidays = current.holidays;
+
+  const deletedCourses = { ...current.deletedCourses };
+  const courses: Course[] = [];
+  for (const course of current.courses) {
+    if (!keep.has(course.id)) {
+      deletedCourses[course.id] = at;
+      continue;
+    }
+    const carried: Course = {
+      id: course.id,
+      name: course.name,
+      timeSlots: course.timeSlots,
+      recurrence: { type: "weekly" },
+      createdAt: course.createdAt,
+      updatedAt: at,
+    };
+    if (course.teacher) carried.teacher = course.teacher;
+    if (course.location) carried.location = course.location;
+    courses.push(carried);
+  }
+
+  const updated: Schedule = {
+    ...current,
+    courses,
+    deletedCourses,
+    attendance: {},
+    pastSemesters: { ...current.pastSemesters, [past.id]: past },
+    semesterSwitchedAt: at,
+  };
+  persist(updated);
+  requestSync("schedule");
   return updated;
 }
 
@@ -144,8 +208,15 @@ export interface AddHolidaysResult {
 export function addHolidays(candidates: { name: string; startDate: string; endDate: string }[]): AddHolidaysResult {
   const current = loadSchedule();
   const existing = current.holidays ?? [];
+  // Also skips one starting the same day under the same name: the 2026 list used to
+  // end with a one-day 2027 元旦 that the 2027 list now covers as 1/1–1/3.
   const toAdd = candidates.filter(
-    (candidate) => !existing.some((item) => holidayKey(item) === holidayKey(candidate)),
+    (candidate) =>
+      !existing.some(
+        (item) =>
+          holidayKey(item) === holidayKey(candidate) ||
+          (item.startDate === candidate.startDate && item.name === candidate.name),
+      ),
   );
   const at = now();
   const newHolidays: Holiday[] = toAdd.map((candidate) => ({ id: generateId(), ...candidate, updatedAt: at }));
