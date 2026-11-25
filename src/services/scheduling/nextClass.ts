@@ -114,6 +114,23 @@ export function formatDuration(ms: number): string {
   return parts.join(" ");
 }
 
+/** "1 小時 05 分 09 秒", "23 分 45 秒", "8 秒": the home countdowns, ticking every second. */
+export function formatDurationWithSeconds(ms: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} 天`);
+  if (hours > 0 || parts.length > 0) parts.push(`${hours} 小時`);
+  // Two digits once a bigger unit leads, so the line doesn't jump in width as it counts down.
+  const pad = (value: number) => (parts.length > 0 ? String(value).padStart(2, "0") : String(value));
+  if (minutes > 0 || parts.length > 0) parts.push(`${pad(minutes)} 分`);
+  parts.push(`${pad(seconds)} 秒`);
+  return parts.join(" ");
+}
+
 function isSameDate(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }

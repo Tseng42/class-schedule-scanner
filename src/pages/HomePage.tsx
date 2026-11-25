@@ -26,8 +26,7 @@ import { getExamCountdown, getHomeEvents, type ScheduledEvent } from "../service
 import { toDateKey } from "../services/scheduling/dateKey";
 import {
   findCurrentOccurrence,
-  formatCountdown,
-  formatDuration,
+  formatDurationWithSeconds,
   formatOccurrenceDay,
   getNextOccurrence,
   getOccurrencesForDate,
@@ -48,7 +47,7 @@ import {
   type FocusLengths,
 } from "../services/focus/focusTimer";
 
-/** The last stretch of a class, when the countdown ticks every second. */
+/** The last stretch of a class, when the progress ring's centre switches from minutes to m:ss. */
 const FINAL_COUNTDOWN_MS = 5 * 60 * 1000;
 /** How long "下課啦！" stays up after a class ends. */
 const CLASS_END_CELEBRATION_MS = 60 * 1000;
@@ -82,16 +81,14 @@ function findJustEnded(occurrences: CourseOccurrence[], now: Date): CourseOccurr
 function nextScreenChange(schedule: Schedule, settings: AppSettings, at: Date): Date | null {
   const occurrences = getOccurrencesForDate(schedule, at, settings);
   const running = findCurrentOccurrence(occurrences, at);
-  if (running) {
-    const msLeft = running.endAt.getTime() - at.getTime();
-    if (msLeft > FINAL_COUNTDOWN_MS) return new Date(running.endAt.getTime() - FINAL_COUNTDOWN_MS);
-    return new Date(at.getTime() + (msLeft % 1000 || 1000));
-  }
+  // Both countdowns show seconds, so either one redraws on its next whole second.
+  const nextSecondOf = (target: Date) => at.getTime() + ((target.getTime() - at.getTime()) % 1000 || 1000);
+  if (running) return new Date(nextSecondOf(running.endAt));
   const candidates: number[] = [];
   const ended = findJustEnded(occurrences, at);
   if (ended) candidates.push(ended.endAt.getTime() + CLASS_END_CELEBRATION_MS);
   const upcoming = getNextOccurrence(schedule, at, settings);
-  if (upcoming) candidates.push(upcoming.startAt.getTime());
+  if (upcoming) candidates.push(nextSecondOf(upcoming.startAt));
   return candidates.length > 0 ? new Date(Math.min(...candidates)) : null;
 }
 
@@ -371,7 +368,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
             <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-lime tabular-nums">
               還有{" "}
               <RollingNumber
-                value={msUntilEnd <= FINAL_COUNTDOWN_MS ? `${formatCountdown(msUntilEnd)} ` : formatDuration(msUntilEnd)}
+                value={`${formatDurationWithSeconds(msUntilEnd)} `}
                 direction="down"
               />
               下課
@@ -407,7 +404,8 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
             </p>
           ))}
           <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-pink">
-            還有 <RollingNumber value={formatDuration(next.startAt.getTime() - now.getTime())} direction="down" />
+            還有{" "}
+            <RollingNumber value={formatDurationWithSeconds(next.startAt.getTime() - now.getTime())} direction="down" />
           </p>
         </div>
       ) : (
