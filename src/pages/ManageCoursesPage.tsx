@@ -15,6 +15,8 @@ import { CourseExtras } from "../components/CourseExtras";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { loadSettings, saveSettings } from "../services/storage/settingsRepository";
 import { CreditSummary } from "../components/CreditSummary";
+import { GradePanel } from "../components/GradePanel";
+import { DEFAULT_PASSING_SCORE, type AppSettings } from "../schema/settings";
 import { summarizeAttendance, type AttendanceSummary } from "../services/scheduling/attendance";
 import { focusMinutesByCourse, focusSessionsBetween, formatFocusTime } from "../services/focus/focusTimer";
 
@@ -112,6 +114,16 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
     cancelEdit();
   };
 
+  /** Saves the 學分/成績 settings changed on this page. Reads fresh, in case another device changed others since. */
+  const saveCreditSettings = (patch: Partial<AppSettings>) => {
+    const next = { ...loadSettings(), ...patch };
+    const saved = withStorageErrorHandling(() => {
+      saveSettings(next);
+      return true;
+    });
+    if (saved) setCreditSettings(next);
+  };
+
   const handleExtrasChange = (next: Course) => {
     const updated = withStorageErrorHandling(() => updateCourse(next.id, next));
     if (updated) setCourses(updated.courses);
@@ -172,15 +184,7 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
         courses={courses}
         pastSemesters={attendanceContext.schedule.pastSemesters}
         settings={creditSettings}
-        onChangeGoal={(graduationCredits) => {
-          // Read fresh: the snapshot above may be stale if settings changed on another device since.
-          const next = { ...loadSettings(), graduationCredits };
-          const saved = withStorageErrorHandling(() => {
-            saveSettings(next);
-            return true;
-          });
-          if (saved) setCreditSettings(next);
-        }}
+        onChangeGoal={(graduationCredits) => saveCreditSettings({ graduationCredits })}
       />
 
       {isAddingNew && draft && (
@@ -270,6 +274,12 @@ export function ManageCoursesPage({ onAddCourse, onNavigateUpload }: ManageCours
                   </p>
                 )}
               </div>
+              <GradePanel
+                course={course}
+                passingScore={creditSettings.passingScore ?? DEFAULT_PASSING_SCORE}
+                onChange={handleExtrasChange}
+                onChangePassingScore={(passingScore) => saveCreditSettings({ passingScore })}
+              />
               <CourseExtras course={course} onChange={handleExtrasChange} />
             </div>
           );

@@ -80,15 +80,25 @@ export function replaceSchedule(schedule: Schedule): Schedule {
   return updated;
 }
 
-/** Fills in a past semester's course credits: the one thing a past semester lets you change. */
-export function setPastCourseCredits(semesterId: string, courseId: string, credits: number | undefined): Schedule {
+/**
+ * Fills in a past semester's course credits or 學期總成績: the only things a past semester
+ * lets you change. An undefined value clears that field.
+ */
+export function setPastCourseFields(
+  semesterId: string,
+  courseId: string,
+  patch: { credits?: number; finalScore?: number },
+): Schedule {
   const current = loadSchedule();
   const semester = current.pastSemesters?.[semesterId];
   if (!semester) throw new Error("找不到這個學期");
   const courses = semester.courses.map((course) => {
     if (course.id !== courseId) return course;
-    const { credits: _old, ...rest } = course;
-    return credits === undefined ? rest : { ...rest, credits };
+    const next: Course = { ...course, ...patch };
+    for (const key of ["credits", "finalScore"] as const) {
+      if (key in patch && patch[key] === undefined) delete next[key];
+    }
+    return next;
   });
   const updated: Schedule = {
     ...current,

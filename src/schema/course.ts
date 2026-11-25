@@ -100,6 +100,17 @@ const notesField = z.preprocess((value) => {
 
 export const MAX_CREDITS = 20;
 
+/** One part of a course's grade, e.g. 期中 at 30%. The score is filled in once it's known. */
+export const gradeItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** Percent of the course grade. */
+  weight: z.number().min(0).max(100),
+  /** Out of 100; a little over for bonus points. */
+  score: z.number().min(0).max(150).optional(),
+});
+export type GradeItem = z.infer<typeof gradeItemSchema>;
+
 export const courseSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -112,6 +123,12 @@ export const courseSchema = z.object({
   events: z.array(courseEventSchema).optional(),
   /** 學分. 0 is real: 體育、軍訓 and the like often carry none. Absent means not filled in. */
   credits: z.number().int().min(0).max(MAX_CREDITS).optional(),
+  /** 成績 parts and their weights, filled in by the student. */
+  gradeItems: z.array(gradeItemSchema).optional(),
+  /** A score the student is aiming for, beyond just passing. */
+  targetScore: z.number().min(0).max(100).optional(),
+  /** The official 學期總成績, when known; it beats anything worked out from gradeItems. */
+  finalScore: z.number().min(0).max(100).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

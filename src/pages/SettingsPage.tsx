@@ -6,7 +6,7 @@ import {
   addHolidays,
   loadSchedule,
   removeHoliday,
-  setPastCourseCredits,
+  setPastCourseFields,
   switchSemester,
 } from "../services/storage/scheduleRepository";
 import { OFFICIAL_HOLIDAYS_TW } from "../data/officialHolidays";
@@ -245,8 +245,8 @@ export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: 
             <PastSemesters
               schedule={schedule}
               settings={settings}
-              onSetCredits={(semesterId, courseId, credits) => {
-                const updated = withStorageErrorHandling(() => setPastCourseCredits(semesterId, courseId, credits));
+              onSetFields={(semesterId, courseId, patch) => {
+                const updated = withStorageErrorHandling(() => setPastCourseFields(semesterId, courseId, patch));
                 if (updated) setSchedule(updated);
               }}
             />

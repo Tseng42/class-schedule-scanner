@@ -3,6 +3,7 @@ import type { Course } from "../schema/course";
 import type { Schedule } from "../schema/schedule";
 import { DEFAULT_GRADUATION_CREDITS, type AppSettings } from "../schema/settings";
 import { RollingNumber } from "./RollingNumber";
+import { creditAverages } from "../services/grades/grades";
 
 interface CreditSummaryProps {
   courses: Course[];
@@ -31,6 +32,8 @@ export function CreditSummary({ courses, pastSemesters, settings, onChangeGoal }
     0,
   );
   const fraction = Math.min(1, total / goal);
+  const semesterAverages = creditAverages(courses);
+  const overallAverages = creditAverages([...courses, ...past.flatMap((semester) => semester.courses)]);
 
   const saveGoal = () => {
     const value = Number(goalText.trim());
@@ -107,7 +110,25 @@ export function CreditSummary({ courses, pastSemesters, settings, onChangeGoal }
           </button>
         )}
       </div>
+      {overallAverages && (
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t-2 border-ink/10 pt-2 text-xs font-bold">
+          {semesterAverages && (
+            <span>
+              這學期平均 <span className="font-black tabular-nums">{semesterAverages.average}</span>
+            </span>
+          )}
+          <span>
+            累計平均 <span className="font-black tabular-nums">{overallAverages.average}</span>
+          </span>
+          <span>
+            GPA <span className="font-black tabular-nums">{overallAverages.gpa.toFixed(2)}</span>
+            <span className="text-ink/60">(4.3 制參考)</span>
+          </span>
+        </div>
+      )}
       <p className="mt-1 text-[10px] font-bold text-ink/60">
+        {overallAverages &&
+          "平均照學分加權,只算有學分和學期總成績的課;GPA 依臺大、臺師大的 4.3 制換算,各校不同,以學校公告為準。"}
         四年制學士班依法至少 {DEFAULT_GRADUATION_CREDITS} 學分,實際以你系上的規定為準。
       </p>
     </section>
