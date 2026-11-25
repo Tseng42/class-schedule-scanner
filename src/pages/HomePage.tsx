@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LargeTitle } from "../components/LargeTitle";
 import { collapseBack, expandFrom, expandSourceOf } from "../lib/expandTransition";
 import { loadSchedule, setAttendance, updateCourseEvent } from "../services/storage/scheduleRepository";
@@ -18,6 +18,9 @@ import { FocusTimerOverlay } from "../components/FocusTimerOverlay";
 import { WeeklyTimetable } from "../components/WeeklyTimetable";
 import { RollingNumber } from "../components/RollingNumber";
 import { burstConfetti } from "../lib/confetti";
+import { AchievementToast } from "../components/AchievementToast";
+import { badgeProgress, reachedLevels } from "../services/achievements/achievements";
+import { recordAchievements } from "../services/storage/scheduleRepository";
 import { formatDateRange } from "../lib/formatDate";
 import type { Course, PrepItem } from "../schema/course";
 import type { AttendanceStatus, Schedule } from "../schema/schedule";
@@ -40,12 +43,7 @@ import {
   trackingStartKey,
 } from "../services/scheduling/attendance";
 import { buildSemesterReview, isReviewSeason, type SemesterReview } from "../services/scheduling/semesterReview";
-import {
-  focusLengthsFrom,
-  focusSessionsBetween,
-  sumMinutes,
-  type FocusLengths,
-} from "../services/focus/focusTimer";
+import { focusLengthsFrom, focusSessionsBetween, sumMinutes, type FocusLengths } from "../services/focus/focusTimer";
 
 /** How long "下課啦！" stays up after a class ends. */
 const CLASS_END_CELEBRATION_MS = 60 * 1000;
@@ -72,7 +70,9 @@ function occurrenceKey(occurrence: CourseOccurrence): string {
 function findJustEnded(occurrences: CourseOccurrence[], now: Date): CourseOccurrence | undefined {
   return [...occurrences]
     .reverse()
-    .find((occurrence) => now >= occurrence.endAt && now.getTime() - occurrence.endAt.getTime() < CLASS_END_CELEBRATION_MS);
+    .find(
+      (occurrence) => now >= occurrence.endAt && now.getTime() - occurrence.endAt.getTime() < CLASS_END_CELEBRATION_MS,
+    );
 }
 
 /** When the home screen next needs to redraw: a class starting or ending, or the next second of a countdown. */
@@ -98,9 +98,7 @@ interface HomePageProps {
 /** Undated notes are general reminders (always shown); dated ones only surface on their matching class day. */
 function relevantNotes(course: Course, at: Date): string[] {
   const dateKey = toDateKey(at);
-  return (course.notes ?? [])
-    .filter((note) => !note.date || note.date === dateKey)
-    .map((note) => note.text);
+  return (course.notes ?? []).filter((note) => !note.date || note.date === dateKey).map((note) => note.text);
 }
 
 function isNotificationGranted(): boolean {
@@ -143,6 +141,25 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     [schedule, settings, minute],
   );
   const dateKey = toDateKey(now);
+
+  // 成就徽章: recounted when anything is marked or checked off, and once a day.
+  const reached = useMemo(
+    () => reachedLevels(badgeProgress(schedule, settings, new Date(`${dateKey}T23:59:59`))),
+    [schedule, settings, dateKey],
+  );
+  const [newBadges, setNewBadges] = useState<string[] | null>(null);
+  const dismissBadges = useCallback(() => setNewBadges(null), []);
+  useEffect(() => {
+    const fresh = reached.filter((key) => !schedule.achievements?.[key]);
+    if (fresh.length === 0) return;
+    try {
+      setSchedule(recordAchievements(fresh));
+    } catch {
+      return; // Storage full: try again next time instead of celebrating something not saved.
+    }
+    setNewBadges(fresh);
+    burstConfetti();
+  }, [reached, schedule.achievements]);
   const nearLimit = useMemo(
     () => listCoursesNearLimit(schedule, settings, new Date(`${dateKey}T12:00:00`)),
     [schedule, settings, dateKey],
@@ -182,8 +199,10 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
     if (!focusScreenOpen) return;
     // Opened straight from the setup sheet, it still shrinks into the card on the way out.
     const handlePopState = (event: PopStateEvent) =>
-      collapseBack(() => setFocusScreenOpen(false), event, () =>
-        document.querySelector<HTMLElement>("button[data-focus-card]"),
+      collapseBack(
+        () => setFocusScreenOpen(false),
+        event,
+        () => document.querySelector<HTMLElement>("button[data-focus-card]"),
       );
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -353,7 +372,9 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs font-bold text-ink/60 dark:text-white/60">依你記的出缺席估算,實際以學校紀錄為準。</p>
+          <p className="mt-2 text-xs font-bold text-ink/60 dark:text-white/60">
+            依你記的出缺席估算,實際以學校紀錄為準。
+          </p>
         </section>
       )}
 
@@ -374,19 +395,11 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
               </p>
             ))}
             <p className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-sm font-black text-lime tabular-nums">
-              還有{" "}
-              <RollingNumber
-                value={`${formatDurationWithSeconds(msUntilEnd)} `}
-                direction="down"
-              />
+              還有 <RollingNumber value={`${formatDurationWithSeconds(msUntilEnd)} `} direction="down" />
               下課
             </p>
           </div>
-          <ClassProgressRing
-            startAt={current.startAt}
-            endAt={current.endAt}
-            now={now}
-          />
+          <ClassProgressRing startAt={current.startAt} endAt={current.endAt} now={now} />
         </div>
       ) : justEnded ? (
         <div className="class-end-pop rounded-3xl bg-lime p-5 text-ink">
@@ -458,7 +471,10 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
               <p className="mt-1 text-lg font-black">
                 第 {semester.week} 週
                 {semester.totalWeeks !== null && (
-                  <span className="text-xs font-bold text-ink/60 dark:text-white/60"> / 共 {semester.totalWeeks} 週</span>
+                  <span className="text-xs font-bold text-ink/60 dark:text-white/60">
+                    {" "}
+                    / 共 {semester.totalWeeks} 週
+                  </span>
                 )}
               </p>
               {semester.fraction !== null && (
@@ -490,11 +506,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
             <div className={stripCardClass}>
               <p className={stripLabelClass}>{holiday.kind === "ongoing" ? "放假中" : "下次放假"}</p>
               <p className="mt-1 truncate text-lg font-black">
-                {holiday.kind === "ongoing"
-                  ? holiday.name
-                  : holiday.days === 1
-                    ? "明天"
-                    : `還有 ${holiday.days} 天`}
+                {holiday.kind === "ongoing" ? holiday.name : holiday.days === 1 ? "明天" : `還有 ${holiday.days} 天`}
               </p>
               <p className="mt-0.5 truncate text-xs font-bold text-ink/60 dark:text-white/60">
                 {holiday.kind === "ongoing"
@@ -536,6 +548,7 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
         />
       )}
       {openReview && <SemesterReviewStory review={openReview} onClose={closeReview} />}
+      {newBadges && <AchievementToast keys={newBadges} onDone={dismissBadges} />}
     </main>
   );
 }

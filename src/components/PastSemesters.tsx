@@ -4,7 +4,7 @@ import { courseScore } from "../services/grades/grades";
 import type { PastSemester, Schedule } from "../schema/schedule";
 import type { AppSettings } from "../schema/settings";
 import { buildSemesterReview, type SemesterReview } from "../services/scheduling/semesterReview";
-import { addDays, parseDateKey, toDateKey } from "../services/scheduling/dateKey";
+import { archivedEndKey, pastTerm } from "../services/scheduling/terms";
 import { formatDateRange } from "../lib/formatDate";
 import { collapseBack, expandFrom } from "../lib/expandTransition";
 import { SemesterReviewStory } from "./SemesterReviewStory";
@@ -69,32 +69,9 @@ function parseScore(text: string): number | undefined {
   return value <= 100 ? value : undefined;
 }
 
-/**
- * The review of a semester put away by 換學期, rebuilt from its snapshot as it stood
- * that day. Focus sessions were never cleared, so they come from the live schedule.
- */
 function reviewOf(past: PastSemester, schedule: Schedule, settings: AppSettings): SemesterReview | null {
-  const snapshot: Schedule = {
-    version: 1,
-    courses: past.courses,
-    holidays: past.holidays,
-    attendance: past.attendance,
-    focusSessions: schedule.focusSessions,
-  };
-  // It ended on its last day, or the day it was put away if that came first. Looked at
-  // from the midnight after, so it reads as a finished semester.
-  const endKey = archivedEndKey(past);
-  const dayAfter = parseDateKey(addDays(endKey, 1));
-  return buildSemesterReview(
-    snapshot,
-    { ...settings, semesterStartDate: past.startDate, semesterEndDate: endKey },
-    dayAfter,
-  );
-}
-
-function archivedEndKey(past: PastSemester): string {
-  const archivedKey = toDateKey(new Date(past.archivedAt));
-  return past.endDate && past.endDate < archivedKey ? past.endDate : archivedKey;
+  const term = pastTerm(past, schedule, settings);
+  return buildSemesterReview(term.schedule, term.settings, term.now);
 }
 
 function rangeLabel(past: PastSemester, review: SemesterReview | null): string {

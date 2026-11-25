@@ -23,6 +23,8 @@ import { HolidayEditor } from "../components/HolidayEditor";
 import { LineReminderSettings } from "../components/LineReminderSettings";
 import { ReminderTimeSettings } from "../components/ReminderTimeSettings";
 import { PastSemesters } from "../components/PastSemesters";
+import { AchievementWall } from "../components/AchievementWall";
+import { TOTAL_LEVELS } from "../services/achievements/achievements";
 import { SemesterSettings } from "../components/SemesterSettings";
 import { SemesterSwitch } from "../components/SemesterSwitch";
 import { ThemeSettings } from "../components/ThemeSettings";
@@ -45,6 +47,7 @@ export type SettingsSection =
   | "notifications"
   | "semester"
   | "pastSemesters"
+  | "achievements"
   | "attendanceLimit"
   | "holidays"
   | "theme"
@@ -162,6 +165,11 @@ export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: 
           ? [{ section: "pastSemesters" as const, title: "過去的學期", status: `${pastSemesterCount} 個` }]
           : []),
         {
+          section: "achievements",
+          title: "成就徽章",
+          status: `${Object.keys(schedule.achievements ?? {}).length} / ${TOTAL_LEVELS}`,
+        },
+        {
           section: "attendanceLimit",
           title: "扣考門檻",
           status: ATTENDANCE_LIMIT_LABELS[settings.attendanceLimit ?? "third"],
@@ -241,6 +249,7 @@ export function SettingsPage({ section, onOpenSection, onBack, onNavigateAdd }: 
               />
             </>
           )}
+          {activeRow.section === "achievements" && <AchievementWall schedule={schedule} settings={settings} />}
           {activeRow.section === "pastSemesters" && (
             <PastSemesters
               schedule={schedule}

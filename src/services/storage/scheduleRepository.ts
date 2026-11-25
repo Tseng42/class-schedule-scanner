@@ -74,6 +74,10 @@ export function replaceSchedule(schedule: Schedule): Schedule {
   if (current.pastSemesters || restored.pastSemesters) {
     updated.pastSemesters = { ...current.pastSemesters, ...restored.pastSemesters };
   }
+  // Badges are kept for good, so a restore only ever adds them.
+  if (current.achievements || restored.achievements) {
+    updated.achievements = { ...restored.achievements, ...current.achievements };
+  }
   const switchedAt = [current.semesterSwitchedAt, restored.semesterSwitchedAt].filter(Boolean).sort().pop();
   if (switchedAt) updated.semesterSwitchedAt = switchedAt;
   persist(updated);
@@ -104,6 +108,18 @@ export function setPastCourseFields(
     ...current,
     pastSemesters: { ...current.pastSemesters, [semesterId]: { ...semester, courses, updatedAt: now() } },
   };
+  persist(updated);
+  requestSync("schedule");
+  return updated;
+}
+
+/** Records newly earned badge levels. Ones already earned keep their original date. */
+export function recordAchievements(keys: string[]): Schedule {
+  const current = loadSchedule();
+  const at = now();
+  const achievements = { ...current.achievements };
+  for (const key of keys) achievements[key] ??= at;
+  const updated: Schedule = { ...current, achievements };
   persist(updated);
   requestSync("schedule");
   return updated;

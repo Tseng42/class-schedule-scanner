@@ -176,6 +176,19 @@ function mergeFocusSessions(local: Schedule["focusSessions"], cloud: Schedule["f
   return { ...cloud, ...local };
 }
 
+/** Badges are kept for good: every one either side has, with the earlier date. */
+function mergeAchievements(
+  local: Schedule["achievements"],
+  cloud: Schedule["achievements"],
+): Schedule["achievements"] {
+  if (!local && !cloud) return undefined;
+  const merged = { ...cloud };
+  for (const [key, earnedAt] of Object.entries(local ?? {})) {
+    if (!merged[key] || earnedAt < merged[key]) merged[key] = earnedAt;
+  }
+  return merged;
+}
+
 /** Every past semester either side has is kept; when both have one, the later credits edit wins. */
 function mergePastSemesters(
   local: Schedule["pastSemesters"],
@@ -216,6 +229,8 @@ export function mergeSchedules(local: Schedule, cloud: Schedule, options: MergeO
   if (focusSessions) schedule.focusSessions = focusSessions;
   const pastSemesters = mergePastSemesters(local.pastSemesters, cloud.pastSemesters);
   if (pastSemesters) schedule.pastSemesters = pastSemesters;
+  const achievements = mergeAchievements(local.achievements, cloud.achievements);
+  if (achievements) schedule.achievements = achievements;
 
   const localCourseIds = new Set(local.courses.map((course) => course.id));
   const resultCourseIds = new Set(courses.map((course) => course.id));

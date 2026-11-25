@@ -72,6 +72,8 @@ export const scheduleSchema = z.object({
    * other devices drop their copies of it instead of syncing it back.
    */
   semesterSwitchedAt: z.string().optional(),
+  /** 成就徽章 level (see levelKey, e.g. "early:2") → when it was earned. Kept for good once earned. */
+  achievements: z.record(z.string(), z.string()).optional(),
 });
 export type Schedule = z.infer<typeof scheduleSchema>;
 
