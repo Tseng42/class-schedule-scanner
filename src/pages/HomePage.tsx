@@ -47,8 +47,6 @@ import {
   type FocusLengths,
 } from "../services/focus/focusTimer";
 
-/** The last stretch of a class, when the progress ring's centre switches from minutes to m:ss. */
-const FINAL_COUNTDOWN_MS = 5 * 60 * 1000;
 /** How long "下課啦！" stays up after a class ends. */
 const CLASS_END_CELEBRATION_MS = 60 * 1000;
 
@@ -378,7 +376,6 @@ export function HomePage({ onNavigateUpload, onAddCourse }: HomePageProps) {
             startAt={current.startAt}
             endAt={current.endAt}
             now={now}
-            finalCountdownMs={FINAL_COUNTDOWN_MS}
           />
         </div>
       ) : justEnded ? (

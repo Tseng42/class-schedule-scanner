@@ -10,16 +10,15 @@ interface ClassProgressRingProps {
   startAt: Date;
   endAt: Date;
   now: Date;
-  /** Within this much of the end, the centre switches from minutes to a m:ss countdown. */
-  finalCountdownMs: number;
 }
 
-/** How far through the class we are, drawn as a ring that fills clockwise. */
-export function ClassProgressRing({ startAt, endAt, now, finalCountdownMs }: ClassProgressRingProps) {
+/** How far through the class we are, with an m:ss countdown to the end in the middle. */
+export function ClassProgressRing({ startAt, endAt, now }: ClassProgressRingProps) {
   const total = endAt.getTime() - startAt.getTime();
   const msLeft = Math.max(0, endAt.getTime() - now.getTime());
   const progress = total > 0 ? Math.min(1, Math.max(0, 1 - msLeft / total)) : 1;
-  const isFinalCountdown = msLeft <= finalCountdownMs;
+  // A class of 100 minutes or more reads 1xx:ss, a digit wider than the ring's middle fits at the larger size.
+  const long = msLeft >= 100 * 60000;
 
   return (
     <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }} aria-hidden="true">
@@ -38,18 +37,11 @@ export function ClassProgressRing({ startAt, endAt, now, finalCountdownMs }: Cla
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        {isFinalCountdown ? (
-          <RollingNumber value={formatCountdown(msLeft)} direction="down" className="text-base font-black tabular-nums" />
-        ) : (
-          <>
-            <RollingNumber
-              value={String(Math.round(msLeft / 60000))}
-              direction="down"
-              className="text-xl font-black tabular-nums"
-            />
-            <span className="mt-0.5 text-[10px] font-black">分</span>
-          </>
-        )}
+        <RollingNumber
+          value={formatCountdown(msLeft)}
+          direction="down"
+          className={`${long ? "text-sm" : "text-base"} font-black tabular-nums`}
+        />
       </div>
     </div>
   );
